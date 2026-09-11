@@ -636,8 +636,11 @@
 
     var comments = state.commentsByEntry[e.id] || [];
     var expanded = !!state.expandedComments[e.id];
-    var commentToggle = '<button type="button" class="comment-toggle" data-ctoggle="'+e.id+'">' +
-      icon('message-circle', 15) + '<span>댓글 '+comments.length+'개</span></button>';
+    // Icon plus a bare count, matching the like button beside it. The spelled-out
+    // label moves to aria-label so the number still reads as a comment count.
+    var commentToggle = '<button type="button" class="comment-toggle" data-ctoggle="'+e.id+'" ' +
+      'aria-label="댓글 '+comments.length+'개">' +
+      icon('message-circle', 15) + '<span class="mono">'+comments.length+'</span></button>';
     var commentBody = '';
     if (expanded){
       var list = comments.map(function(c){
