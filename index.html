@@ -134,7 +134,7 @@
      inside a cluster stays tighter than the gap between clusters. */
   .mapcluster{
     flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:9px;
-    padding:10px 11px 13px; border-radius:18px;
+    padding:14px 14px 18px; border-radius:18px;
     background:color-mix(in srgb, var(--card) 55%, transparent);
     border:1px dashed var(--line);
   }
@@ -143,13 +143,16 @@
   }
   .mapcluster-head b{color:var(--ink); font-weight:700;}
   .mapcluster-body{
-    display:flex; flex-wrap:wrap; justify-content:center; gap:16px 8px; max-width:330px;
+    display:flex; flex-wrap:wrap; justify-content:center; gap:13px 2px; max-width:330px;
   }
   .mm{
     flex:0 0 auto; width:98px; padding:0; border:none; background:none; cursor:pointer;
-    font-family:inherit; color:var(--ink);
+    font-family:inherit; color:var(--ink); position:relative;
     display:flex; flex-direction:column; align-items:center; gap:7px;
   }
+  /* Whichever one you are reaching for comes to the front, so an overlap never
+     hides the message you are trying to read. */
+  .mm:hover, .mm:focus-visible{z-index:3;}
   .mm-bubble{
     /* Two lines tall whatever the message, so the avatars below line up
        across a cluster instead of stepping up and down. */
@@ -589,11 +592,12 @@
     bannerMsg: null        // single source of truth for the top banner (see renderBanner)
   };
 
-  function hashHue(str){
+  function hashInt(str){
     var h = 0;
-    for (var i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
-    return h % 360;
+    for (var i=0;i<String(str).length;i++){ h = (h*31 + String(str).charCodeAt(i)) >>> 0; }
+    return h;
   }
+  function hashHue(str){ return hashInt(str) % 360; }
   // Avatar shows the first character of the nickname. Array.from keeps emoji and
   // other astral-plane characters whole instead of splitting a surrogate pair.
   function avatarInitial(name){
@@ -926,7 +930,13 @@
       var photos = (e.media || []).length;
       var say = e.text || (photos ? '사진 ' + photos + '장' : '기록을 남겼어요');
       var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
-      return '<button type="button" class="mm" data-open="'+escapeHtml(e.id)+'">' +
+      // Offsets come from the record's id, so they hold still across renders
+      // instead of reshuffling every time the feed updates.
+      var dx = (hashInt(e.id + 'x') % 19) - 9;
+      var dy = (hashInt(e.id + 'y') % 19) - 9;
+      var rot = ((hashInt(e.id + 'r') % 61) - 30) / 10;
+      var nudge = 'transform:translate('+dx+'px,'+dy+'px) rotate('+rot+'deg);';
+      return '<button type="button" class="mm" style="'+nudge+'" data-open="'+escapeHtml(e.id)+'">' +
           '<span class="mm-bubble"><span class="mm-say">'+escapeHtml(say)+'</span></span>' +
           '<span class="mm-puck" style="--h:'+hashHue(e.authorName)+'">' +
             escapeHtml(avatarInitial(e.authorName))+mood +
