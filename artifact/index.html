@@ -1041,6 +1041,15 @@
     Array.prototype.forEach.call(root.querySelectorAll('[data-ctoggle]'), function(btn){
       btn.addEventListener('click', function(){
         var id = btn.getAttribute('data-ctoggle');
+        // Opening the box is the moment someone sets out to comment, so the name
+        // is asked here rather than after they have typed one out.
+        if (!state.expandedComments[id] && !state.myName){
+          openGate('action', function(){
+            state.expandedComments[id] = true;
+            render();
+          });
+          return;
+        }
         state.expandedComments[id] = !state.expandedComments[id];
         render();
       });
