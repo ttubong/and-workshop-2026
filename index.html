@@ -176,6 +176,7 @@
     display:flex; align-items:center; justify-content:center;
   }
   .thumb .up{position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; text-align:center;}
+  .thumb .up.err{background:rgba(180,50,40,.82); font-weight:700;}
   .sheet-actions{display:flex; gap:8px; margin-top:6px;}
   .btn{flex:1; border:none; border-radius:9px; padding:12px; font-size:14.5px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer;}
   .btn.primary{background:var(--accent); color:var(--accent-ink);}
@@ -584,7 +585,8 @@
       var inner = pf.type === 'video'
         ? '<video src="'+pf.previewUrl+'" muted></video>'
         : '<img src="'+pf.previewUrl+'">';
-      var overlay = pf.status === 'uploading' ? '<div class="up">'+pf.progress+'%</div>' : '';
+      var overlay = pf.status === 'uploading' ? '<div class="up">'+pf.progress+'%</div>'
+        : pf.status === 'error' ? '<div class="up err">업로드 실패</div>' : '';
       return '<div class="thumb" data-idx="'+idx+'">'+inner+overlay+'<button type="button" class="x" data-remove="'+idx+'">×</button></div>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-remove]'), function(b){
@@ -637,19 +639,33 @@
     saveBtn.disabled = true;
     saveBtn.textContent = '저장 중…';
 
-    uploadAllPending().then(function(media){
+    uploadAllPending().then(function(out){
       return sb.from('entries').insert({
         author_name: state.myName,
         occurred_at: occurredAt,
         location: location,
         text: text,
-        media: media
-      });
-    }).then(function(res){
-      if (res && res.error) throw res.error;
+        media: out.media
+      }).then(function(res){ return { res: res, failedCount: out.failedCount }; });
+    }).then(function(outcome){
+      if (outcome.res && outcome.res.error) throw outcome.res.error;
       saveBtn.disabled = false;
       saveBtn.textContent = '채집 저장';
-      closeModal();
+      if (outcome.failedCount > 0){
+        // Entry text/location already saved successfully — only the media failed.
+        // Keep the modal open and the failed thumbnails visible so it's obvious what didn't make it,
+        // instead of silently dropping them like before. Clear the text fields so a retry
+        // creates a fresh photo-only entry rather than duplicating the text we already saved.
+        document.getElementById('fText').value = '';
+        document.getElementById('fLocation').value = '';
+        renderLocChips();
+        state.pendingFiles = state.pendingFiles.filter(function(pf){ return pf.status === 'error'; });
+        renderThumbs();
+        errEl.textContent = '기록은 저장됐지만, 사진/영상 ' + outcome.failedCount + '개는 업로드에 실패했어요 (네트워크 상태를 확인하고 "채집 저장"을 다시 눌러 사진만 재시도해보세요). 이 창은 닫으셔도 돼요.';
+        errEl.style.display = 'block';
+      } else {
+        closeModal();
+      }
     }).catch(function(e){
       saveBtn.disabled = false;
       saveBtn.textContent = '채집 저장';
@@ -658,26 +674,75 @@
     });
   });
 
+  // Downscale/compress photos in the browser before upload so large phone photos
+  // (often 3-15MB) don't time out or fail over weak workshop wifi/cell signal.
+  // Videos and non-image files are passed through untouched. If anything about
+  // the compression fails (unsupported format, decode error, etc.) we fall back
+  // to uploading the original file rather than blocking the user.
+  function compressImage(file, maxDim, quality){
+    return new Promise(function(resolve){
+      if (!file.type || file.type.indexOf('image') !== 0 || file.type === 'image/gif'){
+        resolve(file); return;
+      }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      var settled = false;
+      var finish = function(result){ if (settled) return; settled = true; URL.revokeObjectURL(url); resolve(result); };
+      img.onload = function(){
+        try{
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (!w || !h){ finish(file); return; }
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          if (scale >= 1){ finish(file); return; }
+          var cw = Math.round(w * scale), ch = Math.round(h * scale);
+          var canvas = document.createElement('canvas');
+          canvas.width = cw; canvas.height = ch;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, cw, ch);
+          canvas.toBlob(function(blob){
+            if (!blob){ finish(file); return; }
+            var newName = (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg';
+            finish(new File([blob], newName, { type: 'image/jpeg' }));
+          }, 'image/jpeg', quality);
+        } catch(e){ finish(file); }
+      };
+      img.onerror = function(){ finish(file); };
+      img.src = url;
+    });
+  }
+
   function uploadAllPending(){
-    if (!state.pendingFiles.length) return Promise.resolve([]);
+    if (!state.pendingFiles.length) return Promise.resolve({ media: [], failedCount: 0 });
     var jobs = state.pendingFiles.map(function(pf){
       pf.status = 'uploading';
       pf.progress = 50;
       renderThumbs();
-      var ext = (pf.file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'') || 'bin';
-      var path = 'entries/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
-      return sb.storage.from(MEDIA_BUCKET).upload(path, pf.file, { cacheControl: '3600', upsert: false })
-        .then(function(res){
-          if (res.error) return null; // upload failed — skip this file rather than blocking the whole entry
-          pf.progress = 100;
-          renderThumbs();
-          var pub = sb.storage.from(MEDIA_BUCKET).getPublicUrl(path);
-          return { url: pub.data.publicUrl, type: pf.type, path: path };
-        })
-        .catch(function(){ return null; });
+      return compressImage(pf.file, 1600, 0.82).then(function(uploadFile){
+        var ext = (uploadFile.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'') || 'bin';
+        var path = 'entries/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+        return sb.storage.from(MEDIA_BUCKET).upload(path, uploadFile, { cacheControl: '3600', upsert: false, contentType: uploadFile.type || undefined })
+          .then(function(res){
+            if (res.error){
+              pf.status = 'error';
+              renderThumbs();
+              return null; // upload failed — skip this file rather than blocking the whole entry
+            }
+            pf.status = 'done';
+            pf.progress = 100;
+            renderThumbs();
+            var pub = sb.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+            return { url: pub.data.publicUrl, type: pf.type, path: path };
+          })
+          .catch(function(){
+            pf.status = 'error';
+            renderThumbs();
+            return null;
+          });
+      });
     });
     return Promise.all(jobs).then(function(results){
-      return results.filter(Boolean);
+      var media = results.filter(Boolean);
+      return { media: media, failedCount: results.length - media.length };
     });
   }
 
