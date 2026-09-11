@@ -103,6 +103,19 @@
   .itin-day:first-child{margin-top:0;}
   .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
   .feed{margin-top:16px; display:flex; flex-direction:column; gap:12px;}
+  /* View switch, sitting just under the header's rule */
+  .segmented{
+    display:flex; gap:2px; padding:3px; margin:14px 0 0;
+    background:var(--paper-2); border:1px solid var(--line); border-radius:999px;
+  }
+  .seg{
+    flex:1 1 0; min-width:0; border:none; background:none; color:var(--ink-soft);
+    font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:500;
+    padding:7px 12px; border-radius:999px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    transition:background .15s, color .15s;
+  }
+  .seg.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 3px var(--shadow);}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 2px 10px var(--shadow);}
   .card-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .avatar{
@@ -286,8 +299,13 @@
   </header>
 
   <div class="wrap" style="padding:0;">
+    <div class="segmented" role="tablist" aria-label="보기 전환">
+      <button type="button" class="seg on" data-view="list" role="tab" aria-selected="true">리스트뷰</button>
+      <button type="button" class="seg" data-view="map" role="tab" aria-selected="false">지도뷰</button>
+    </div>
     <div id="banner"></div>
     <div class="feed" id="feed"></div>
+    <div id="mapPane" style="display:none;"></div>
   </div>
 </div>
 
@@ -465,6 +483,7 @@
   var state = {
     entries: [],
     removedIds: {},        // entryId -> true, from a confirmed delete until the refetch catches up
+    view: 'list',          // 'list' | 'map'
     filterDay: 'all',
     filterMember: 'all',
     filterMood: 'all',
@@ -583,6 +602,19 @@
     return state.filterMood === 'all' ? '전체 감흥' : state.filterMood;
   }
 
+  function renderSegmented(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
+      var on = btn.getAttribute('data-view') === state.view;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
+    btn.addEventListener('click', function(){
+      state.view = btn.getAttribute('data-view');
+      render();
+    });
+  });
 
   function renderMe(){
     var btn = document.getElementById('meBtn');
@@ -606,6 +638,8 @@
     var wrap = document.getElementById('filterBar');
     document.getElementById('statCount').textContent = state.entries.length;
     document.getElementById('statMembers').textContent = distinctMembers().length;
+    // The filters act on the list; the map pane has nothing for them to narrow yet.
+    if (state.view === 'map'){ wrap.innerHTML = ''; return; }
     var dims = [
       { key:'day', active: state.filterDay !== 'all' },
       { key:'member', active: state.filterMember !== 'all' },
@@ -771,10 +805,22 @@
     );
   }
 
+  function renderMapPane(){
+    document.getElementById('mapPane').innerHTML =
+      '<div class="empty" style="margin-top:16px;">업데이트 중</div>';
+  }
+
   function render(){
     renderMe();
+    renderSegmented();
     renderFilterButtons();
     renderBanner();
+
+    var isMap = state.view === 'map';
+    document.getElementById('feed').style.display = isMap ? 'none' : '';
+    document.getElementById('mapPane').style.display = isMap ? '' : 'none';
+    if (isMap){ renderMapPane(); return; }
+
     var filtered = filteredEntries();
     var feed = document.getElementById('feed');
     if (!filtered.length){
