@@ -1,0 +1,13 @@
+# Old git directories left over from a repair; not part of the site.
+_to_delete
+
+# Screenshots and scratch SQL kept for reference.
+Claude outputs
+
+# The claude.ai artifact build. It talks to window.claude for storage and
+# uploads, which only exists inside an artifact — served from here it would
+# render but save nothing.
+artifact
+
+# Schema reference, applied by hand in the Supabase SQL editor.
+supabase-setup.sql
