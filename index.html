@@ -169,8 +169,14 @@
     background:var(--card); border:1px solid var(--line); border-radius:12px;
     padding:6px 9px; font-size:11.5px; line-height:1.4; text-align:center;
     box-shadow:0 2px 8px var(--shadow);
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-    overflow-wrap:break-word;
+    overflow:hidden;
+  }
+  /* The clamp lives on an inner span, not on the bubble: the bubble is a flex
+     item, and a flex item's display is blockified, which turns -webkit-box into
+     a plain block and drops the line limit (and its ellipsis) entirely. */
+  .mm-say{
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    overflow:hidden; overflow-wrap:break-word;
   }
   .mm-bubble:after{
     content:""; position:absolute; left:50%; bottom:-5px; width:8px; height:8px;
@@ -919,7 +925,7 @@
       var say = e.text || (photos ? '사진 ' + photos + '장' : '기록을 남겼어요');
       var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
       return '<button type="button" class="mm" data-member="'+escapeHtml(e.authorName)+'">' +
-          '<span class="mm-bubble">'+escapeHtml(say)+'</span>' +
+          '<span class="mm-bubble"><span class="mm-say">'+escapeHtml(say)+'</span></span>' +
           '<span class="mm-puck" style="--h:'+hashHue(e.authorName)+'">' +
             escapeHtml(avatarInitial(e.authorName))+mood +
           '</span>' +
