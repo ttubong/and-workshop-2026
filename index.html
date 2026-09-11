@@ -174,7 +174,10 @@
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
     overflow:hidden; overflow-wrap:break-word;
   }
-  .mm-say .ic{display:inline-block; vertical-align:-2px; margin-right:3px; color:var(--ink-soft);}
+  .mm-say .ic{display:inline-block; vertical-align:-2px; color:var(--ink-soft);}
+  /* Gap only when a message follows. :only-child would not do — it ignores text
+     nodes, so it matched even when the bubble had a message beside the icon. */
+  .mm-say .ic:not(:last-child){margin-right:3px;}
   .mm-bubble:after{
     content:""; position:absolute; left:50%; bottom:-5px; width:8px; height:8px;
     transform:translateX(-50%) rotate(45deg); background:var(--card);
@@ -952,10 +955,11 @@
     function puckHtml(e){
       var moods = splitTags(e.mood);
       var photos = (e.media || []).length;
-      // A photo gets an icon in front of the message. With no message of its own,
-      // the count stands in so the bubble still says what is there.
-      var say = e.text || (photos ? '사진 ' + photos + '장' : '기록을 남겼어요');
-      var sayHtml = (photos ? icon('image', 12) : '') + escapeHtml(say);
+      // A photo gets an icon in front of the message. With a photo and no message
+      // the icon stands alone — it already says what is there.
+      var say = e.text || (photos ? '' : '기록을 남겼어요');
+      var sayHtml = (photos ? icon('image', 12) : '') +
+        (say ? '<span class="mm-text">' + escapeHtml(say) + '</span>' : '');
       var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
       // Offsets come from the record's id, so they hold still across renders
       // instead of reshuffling every time the feed updates.
