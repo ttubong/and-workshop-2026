@@ -835,7 +835,7 @@
 
   var pendingLikeToggle = {}; // entryId -> true while a toggle request is in flight
   function toggleLike(entryId){
-    if (!state.myName){ openGate(); return; }
+    if (!state.myName){ openGate('action', function(){ toggleLike(entryId); }); return; }
     if (!requireDb()) return;
     if (pendingLikeToggle[entryId]) return;
     if (!state.likesByEntry[entryId]) state.likesByEntry[entryId] = {};
@@ -877,7 +877,9 @@
   }
 
   function sendComment(entryId){
-    if (!state.myName){ openGate(); return; }
+    // The draft is already in state, so re-running this after the name is set
+    // posts exactly what was typed.
+    if (!state.myName){ openGate('action', function(){ sendComment(entryId); }); return; }
     if (!requireDb()) return;
     var text = (state.commentDrafts[entryId] || '').trim();
     if (!text) return;
@@ -1015,9 +1017,14 @@
 
   // 'write' — the name was needed before posting, so continue into the write sheet.
   // 'profile' — opened from the header avatar, so just save the name and stop.
+  // Pass `after` instead when the name was only in the way of something the
+  // viewer already asked for (a like, a comment): it runs once the name exists
+  // and nothing else opens.
   var gateNext = 'write';
-  function openGate(next){
+  var gateAfter = null;
+  function openGate(next, after){
     gateNext = next || 'write';
+    gateAfter = typeof after === 'function' ? after : null;
     var editing = !!state.myName;
     document.getElementById('gateTitle').textContent = editing ? '이름 바꾸기' : '먼저, 이름을 알려주세요';
     document.getElementById('gateHint').textContent = editing
@@ -1043,6 +1050,9 @@
     saveMyName(v);
     closeGate();
     render(); // the new name changes the header avatar and which likes/comments are mine
+    var after = gateAfter;
+    gateAfter = null;
+    if (after){ after(); return; }
     if (gateNext === 'write') openModal();
   });
 
