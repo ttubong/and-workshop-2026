@@ -60,14 +60,14 @@
      adds none of its own — otherwise the title is indented past the cards below. */
   .top-inner{max-width:640px; margin:0 auto; padding:14px 0 10px;}
   .eyebrow{
-    font-family:'Noto Sans KR',sans-serif; font-size:11px; letter-spacing:.12em;
+    font-family:'Noto Sans KR',sans-serif; font-size:12px; letter-spacing:.12em;
     text-transform:uppercase; color:var(--moss); margin:0 0 4px;
   }
   h1.title{
     font-family:'Noto Sans KR',sans-serif; font-weight:700;
     font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
   }
-  .subtitle{font-size:13px; color:var(--ink-soft); margin:0 0 12px;}
+  .subtitle{font-size:14px; color:var(--ink-soft); margin:0 0 12px;}
   .stats{display:flex; gap:14px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
   .top-row{display:flex; align-items:flex-start; gap:12px;}
@@ -93,7 +93,7 @@
   .scrollrow::-webkit-scrollbar{display:none;}
   .pill{
     flex:0 0 auto; border:1px solid var(--line); background:var(--card); color:var(--ink-soft);
-    padding:6px 12px; border-radius:999px; font-size:13px; cursor:pointer; white-space:nowrap;
+    padding:6px 12px; border-radius:999px; font-size:14px; cursor:pointer; white-space:nowrap;
     transition:background .15s, color .15s, border-color .15s;
     display:inline-flex; align-items:center; gap:5px;
   }
@@ -102,7 +102,7 @@
   .pill.day-active-2{background:var(--moss); color:#fff; border-color:var(--moss);}
   .pill.day-active-3{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
   .memberrow{margin-top:8px;}
-  .itin-list{font-size:13.5px; line-height:1.7; color:var(--ink);}
+  .itin-list{font-size:14px; line-height:1.7; color:var(--ink);}
   .itin-day{margin-top:12px;}
   .itin-day:first-child{margin-top:0;}
   .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
@@ -114,7 +114,7 @@
   }
   .seg{
     flex:1 1 0; min-width:0; border:none; background:none; color:var(--ink-soft);
-    font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:500;
+    font-family:'Noto Sans KR',sans-serif; font-size:14px; font-weight:500;
     padding:7px 12px; border-radius:999px; cursor:pointer;
     display:flex; align-items:center; justify-content:center; gap:5px;
     transition:background .15s, color .15s;
@@ -136,7 +136,7 @@
     border:1px dashed var(--line);
   }
   .mapcluster-head{
-    display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-soft);
   }
   .mapcluster-head b{color:var(--ink); font-weight:700;}
   .mapcluster-body{
@@ -154,13 +154,13 @@
      one-line message gets a one-line bubble while the avatars below still line
      up across a cluster. */
   .mm-top{
-    width:100%; height:46px;
+    width:100%; height:48px;
     display:flex; align-items:flex-end; justify-content:center;
   }
   .mm-bubble{
     position:relative; max-width:100%; margin-bottom:2px;
     background:var(--card); border:1px solid var(--line); border-radius:12px;
-    padding:6px 9px; font-size:11.5px; line-height:1.4; text-align:center;
+    padding:6px 9px; font-size:12px; line-height:1.4; text-align:center;
     box-shadow:0 2px 8px var(--shadow);
     overflow:hidden;
   }
@@ -198,11 +198,11 @@
     box-shadow:0 1px 4px var(--shadow);
   }
   .mm-name{
-    font-size:12.5px; font-weight:700; max-width:100%;
+    font-size:14px; font-weight:700; max-width:100%;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .mm-where{
-    font-size:10.5px; color:var(--ink-soft); max-width:100%;
+    font-size:12px; color:var(--ink-soft); max-width:100%;
     display:flex; align-items:center; gap:3px; min-width:0;
   }
   .mm-where span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -215,14 +215,15 @@
     font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:14px; flex:0 0 auto;
   }
   .who{flex:1; min-width:0;}
+  .who{display:flex; flex-direction:column;}
   .who .name{font-weight:700; font-size:14px;}
-  .who .meta{font-size:11.5px; color:var(--ink-soft); display:flex; gap:6px; flex-wrap:wrap; margin-top:1px;}
-  .daytag{font-family:'Noto Sans KR',sans-serif; font-size:10.5px; padding:2px 7px; border-radius:999px; color:#fff; flex:0 0 auto;}
+  .who .meta{font-size:12px; color:var(--ink-soft); display:flex; gap:6px; flex-wrap:wrap; margin-top:1px;}
+  .daytag{font-family:'Noto Sans KR',sans-serif; font-size:12px; padding:2px 7px; border-radius:999px; color:#fff; flex:0 0 auto;}
   .daytag.d1{background:var(--river);}
   .daytag.d2{background:var(--moss);}
   .daytag.d3{background:var(--accent); color:var(--accent-ink);}
   .daytag.d0{background:var(--ink-soft);}
-  .card-text{font-size:14.5px; line-height:1.65; white-space:pre-wrap; margin:0 0 10px;}
+  .card-text{font-size:16px; line-height:1.65; white-space:pre-wrap; margin:0 0 10px;}
   .card-media{display:grid; grid-template-columns:repeat(auto-fit, minmax(90px,1fr)); gap:6px; margin-bottom:10px;}
   .card-media img, .card-media video{width:100%; height:130px; object-fit:cover; border-radius:8px; background:var(--paper-2); display:block;}
   .card-media img{cursor:zoom-in;}
@@ -241,43 +242,43 @@
   .tags-inline{display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; flex:1; min-width:0;}
   .loc{font-size:12px; color:var(--river); display:flex; align-items:center; gap:4px; white-space:nowrap;}
   .moodtag{font-size:12px; color:var(--accent); display:flex; align-items:center; gap:4px; white-space:nowrap;}
-  .del{font-size:11px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 4px; flex:0 0 auto;}
+  .del{font-size:12px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 4px; flex:0 0 auto;}
   .card-actions{display:flex; align-items:center; gap:14px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line);}
   .like-btn, .comment-toggle{
-    background:none; border:none; cursor:pointer; padding:2px 0; font-size:13px; color:var(--ink-soft);
+    background:none; border:none; cursor:pointer; padding:2px 0; font-size:14px; color:var(--ink-soft);
     display:flex; align-items:center; gap:5px; font-family:'Noto Sans KR',sans-serif;
   }
   .like-btn.on{color:var(--accent); font-weight:700;}
   .like-btn.on .ic{fill:currentColor;}
   .card-comments{margin-top:10px;}
   .comment-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
-  .comment-item{font-size:13px; line-height:1.5; color:var(--ink); display:flex; align-items:baseline; gap:6px;}
+  .comment-item{font-size:14px; line-height:1.5; color:var(--ink); display:flex; align-items:baseline; gap:6px;}
   .comment-item b{font-family:'Noto Sans KR',sans-serif; font-weight:700; flex:0 0 auto;}
   .comment-item .ctext{flex:1; min-width:0; overflow-wrap:break-word;}
-  .cdel{font-size:11px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 2px; flex:0 0 auto;}
-  .comment-empty{font-size:12.5px; color:var(--ink-soft);}
+  .cdel{font-size:12px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 2px; flex:0 0 auto;}
+  .comment-empty{font-size:14px; color:var(--ink-soft);}
   .comment-add{display:flex; gap:6px;}
   .comment-input{
     flex:1; min-width:0; border:1px solid var(--line); background:var(--paper-2); color:var(--ink);
-    border-radius:999px; padding:7px 12px; font-size:13px; font-family:inherit; box-sizing:border-box;
+    border-radius:999px; padding:7px 12px; font-size:14px; font-family:inherit; box-sizing:border-box;
   }
   .comment-send{
     flex:0 0 auto; border:none; background:var(--cta); color:var(--cta-ink); border-radius:999px; padding:7px 14px;
-    font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
+    font-size:14px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
   }
-  .empty{text-align:center; padding:44px 20px; color:var(--ink-soft); border:1px dashed var(--line); border-radius:14px; font-size:14px; line-height:1.7;}
+  .empty{text-align:center; padding:44px 20px; color:var(--ink-soft); border:1px dashed var(--line); border-radius:14px; font-size:16px; line-height:1.7;}
   .sample-badge{
-    display:inline-block; font-family:'Noto Sans KR',sans-serif; font-size:10px; letter-spacing:.08em;
+    display:inline-block; font-family:'Noto Sans KR',sans-serif; font-size:12px; letter-spacing:.08em;
     color:var(--ink-soft); border:1px solid var(--line); border-radius:999px; padding:1px 8px; margin-bottom:10px;
   }
   .sample{opacity:.6;}
-  .banner{background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:12.5px; color:var(--ink-soft); margin:14px 0 0;}
+  .banner{background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; color:var(--ink-soft); margin:14px 0 0;}
   .banner.warn{border-color:var(--accent); color:var(--accent);}
   .fab{
     position:fixed; right:20px; bottom:22px; z-index:30;
     background:var(--cta); color:var(--cta-ink);
     border:none; border-radius:999px; padding:14px 20px;
-    font-family:'Noto Sans KR',sans-serif; font-size:15px; font-weight:700;
+    font-family:'Noto Sans KR',sans-serif; font-size:16px; font-weight:700;
     box-shadow:0 6px 18px var(--shadow); cursor:pointer; display:flex; align-items:center; gap:6px;
   }
   .fab:focus-visible, .pill:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
@@ -298,17 +299,17 @@
   .sheet.confirm .sheet-actions .btn{flex:1 1 0; min-width:0;}
   .sheet-head{padding:20px 18px 0; flex:0 0 auto;}
   .sheet-head h2{font-family:'Noto Sans KR',sans-serif; font-size:19px; margin:0 0 4px;}
-  .sheet-head .hint{font-size:12.5px; color:var(--ink-soft); margin:0 0 16px;}
+  .sheet-head .hint{font-size:14px; color:var(--ink-soft); margin:0 0 16px;}
   .sheet-body{padding:0 18px 16px; overflow-y:auto; overflow-x:hidden; flex:1 1 auto; min-height:0;}
   .sheet-body:last-child{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
   label.field{display:block; margin-bottom:14px;}
   label.field .lab{
-    display:block; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+    display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase;
     color:var(--ink-soft); margin-bottom:6px; font-family:'Noto Sans KR',sans-serif;
   }
   input[type=text], input[type=datetime-local], textarea, select{
     width:100%; min-width:0; max-width:100%; border:1px solid var(--line); background:var(--card); color:var(--ink);
-    border-radius:9px; padding:10px 11px; font-size:14.5px; font-family:inherit; box-sizing:border-box;
+    border-radius:9px; padding:10px 11px; font-size:16px; font-family:inherit; box-sizing:border-box;
   }
   input[type=datetime-local]{
     -webkit-appearance:none; appearance:none;
@@ -316,9 +317,9 @@
   label.field{min-width:0;}
   textarea{resize:vertical; min-height:80px; line-height:1.55;}
   .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
-  .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:12.5px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
+  .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:14px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
   .chip.on{background:var(--moss); border-color:var(--moss); color:#fff;}
-  .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:13px; color:var(--ink-soft); cursor:pointer;}
+  .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-soft); cursor:pointer;}
   .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
   .thumb{width:64px; height:64px; border-radius:8px; overflow:hidden; position:relative; background:var(--paper-2); border:1px solid var(--line);}
   .thumb img, .thumb video{width:100%; height:100%; object-fit:cover;}
@@ -327,16 +328,57 @@
     background:var(--ink); color:var(--paper); border:none; font-size:12px; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
   }
-  .thumb .up{position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; text-align:center;}
+  .thumb .up{position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; text-align:center;}
   .thumb .up.err{background:rgba(180,50,40,.82); font-weight:700;}
   .sheet-actions{display:flex; gap:8px; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); flex:0 0 auto;}
-  .btn{flex:1; border:none; border-radius:9px; padding:12px; font-size:14.5px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer;}
+  .btn{flex:1; border:none; border-radius:9px; padding:12px; font-size:16px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer;}
   .btn.primary{background:var(--cta); color:var(--cta-ink);}
   .btn.ghost{background:var(--card); color:var(--ink-soft); border:1px solid var(--line); flex:0 0 auto;}
   .btn:disabled{opacity:.55; cursor:default;}
-  .err{color:var(--accent); font-size:12.5px; margin:0 0 12px;}
+  .err{color:var(--accent); font-size:14px; margin:0 0 12px;}
+  /* Profile sheet: everything one person has collected, opened from their name
+     on any card. */
+  .who-btn{
+    flex:1; min-width:0; display:flex; align-items:center; gap:10px;
+    background:none; border:none; padding:0; margin:0; cursor:pointer;
+    font:inherit; color:inherit; text-align:left;
+  }
+  .profile-head{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+  .profile-avatar{
+    width:56px; height:56px; border-radius:50%; flex:0 0 auto;
+    background:hsl(var(--h,140) 40% var(--avatar-l));
+    color:hsl(var(--h,140) 55% var(--avatar-l2));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:22px;
+    overflow:hidden;
+  }
+  .profile-avatar img{width:100%; height:100%; object-fit:cover; display:block;}
+  .profile-who{min-width:0;}
+  .profile-name{font-size:16px; font-weight:700; overflow-wrap:break-word;}
+  .profile-status{font-size:14px; color:var(--ink-soft); margin-top:3px;}
+  .profile-stats{
+    display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--ink-soft);
+    padding-bottom:14px; border-bottom:1px solid var(--line);
+  }
+  .profile-stats b{color:var(--ink); font-weight:500;}
+  .profile-sec{
+    font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-soft); margin:16px 0 8px;
+  }
+  .profile-moods{display:flex; flex-wrap:wrap; gap:6px;}
+  .profile-mood{
+    border:1px solid var(--line); background:var(--card); border-radius:999px;
+    padding:5px 11px; font-size:14px; display:flex; align-items:center; gap:5px;
+  }
+  .profile-mood .mono{color:var(--ink-soft);}
+  .profile-photos{display:grid; grid-template-columns:repeat(auto-fill, minmax(78px,1fr)); gap:6px;}
+  .profile-photos img{
+    width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;
+    display:block; background:var(--paper-2); cursor:zoom-in;
+  }
+  .profile-none{font-size:14px; color:var(--ink-soft);}
   .gate-names{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 16px;}
-  .gate-name{border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 14px; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .gate-name{border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 14px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;}
   .gate-name.active-filter{background:var(--moss); border-color:var(--moss); color:#fff;}
   .filterbar{display:flex; flex-wrap:wrap; gap:8px; margin-top:2px;}
   .setup{
@@ -404,7 +446,7 @@
 <div id="gateOverlay" class="overlay" style="display:none;">
   <div class="sheet">
     <div class="sheet-head">
-      <h2 id="gateTitle">먼저, 이름을 알려주세요</h2>
+      <h2 id="gateTitle">이름을 알려주세요</h2>
       <p class="hint" id="gateHint">기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.</p>
     </div>
     <div class="sheet-body">
@@ -508,6 +550,18 @@
   </div>
 </div>
 
+<div id="profileOverlay" class="overlay" style="display:none;">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>프로필</h2>
+    </div>
+    <div class="sheet-body" id="profileBody"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="profileClose" style="flex:1;">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="filterSheetOverlay" class="overlay" style="display:none;">
   <div class="sheet">
     <div class="sheet-head">
@@ -588,6 +642,7 @@
     removedIds: {},        // entryId -> true, from a confirmed delete until the refetch catches up
     view: 'list',          // 'list' | 'map'
     detailId: null,        // record shown in the detail sheet, null when closed
+    profileName: null,     // person shown in the profile sheet, null when closed
     filterDay: 'all',
     filterLoc: 'all',
     filterMember: 'all',
@@ -713,10 +768,10 @@
   }
 
   function filterButtonLabel(kind){
-    if (kind === 'day') return state.filterDay === 'all' ? '전체 일정' : (dayLabelForKey(state.filterDay) || '전체 일정');
-    if (kind === 'loc') return state.filterLoc === 'all' ? '전체 장소' : state.filterLoc;
-    if (kind === 'member') return state.filterMember === 'all' ? '전체 멤버' : state.filterMember;
-    return state.filterMood === 'all' ? '전체 감흥' : state.filterMood;
+    if (kind === 'day') return state.filterDay === 'all' ? '일정' : (dayLabelForKey(state.filterDay) || '일정');
+    if (kind === 'loc') return state.filterLoc === 'all' ? '장소' : state.filterLoc;
+    if (kind === 'member') return state.filterMember === 'all' ? '멤버' : state.filterMember;
+    return state.filterMood === 'all' ? '감흥' : state.filterMood;
   }
 
   function renderSegmented(){
@@ -775,19 +830,19 @@
     currentFilterKind = kind;
     var title, allLabel, options, current;
     if (kind === 'day'){
-      title = '일정 선택'; allLabel = '전체 일정';
+      title = '일정 선택'; allLabel = '전체';
       options = DAYS.map(function(d){ return { value:d.key, label:d.label }; });
       current = state.filterDay;
     } else if (kind === 'loc'){
-      title = '장소 선택'; allLabel = '전체 장소';
+      title = '장소 선택'; allLabel = '전체';
       options = distinctLocations().map(function(m){ return { value:m, label:m }; });
       current = state.filterLoc;
     } else if (kind === 'member'){
-      title = '멤버 선택'; allLabel = '전체 멤버';
+      title = '멤버 선택'; allLabel = '전체';
       options = distinctMembers().map(function(m){ return { value:m, label:m }; });
       current = state.filterMember;
     } else {
-      title = '감흥 선택'; allLabel = '전체 감흥';
+      title = '감흥 선택'; allLabel = '전체';
       options = distinctMoods().map(function(m){ return { value:m, label:m }; });
       current = state.filterMood;
     }
@@ -887,11 +942,13 @@
     return (
       '<article class="card" data-id="'+e.id+'">' +
         '<div class="card-head">' +
-          '<div class="avatar" style="--h:'+hue+'">'+escapeHtml(initial)+'</div>' +
-          '<div class="who">' +
-            '<div class="name">'+escapeHtml(e.authorName)+'</div>' +
-            '<div class="meta"><span class="mono">'+fmtWhen(e.occurredAt)+'</span></div>' +
-          '</div>' +
+          '<button type="button" class="who-btn" data-profile="'+escapeHtml(e.authorName)+'">' +
+            '<span class="avatar" style="--h:'+hue+'">'+escapeHtml(initial)+'</span>' +
+            '<span class="who">' +
+              '<span class="name">'+escapeHtml(e.authorName)+'</span>' +
+              '<span class="meta"><span class="mono">'+fmtWhen(e.occurredAt)+'</span></span>' +
+            '</span>' +
+          '</button>' +
           dayTag +
         '</div>' +
         (e.text ? '<p class="card-text">'+escapeHtml(e.text)+'</p>' : '') +
@@ -1009,6 +1066,12 @@
   // Cards render in two places now — the feed and the detail sheet — so their
   // controls are wired from one place against whichever container holds them.
   function bindCardHandlers(root){
+    Array.prototype.forEach.call(root.querySelectorAll('[data-profile]'), function(btn){
+      btn.addEventListener('click', function(){
+        state.profileName = btn.getAttribute('data-profile');
+        render();
+      });
+    });
     Array.prototype.forEach.call(root.querySelectorAll('[data-del]'), function(btn){
       btn.addEventListener('click', function(){ openDeleteConfirm(btn.getAttribute('data-del')); });
     });
@@ -1066,6 +1129,96 @@
     if (!open){ overlay.style.display = 'flex'; lockScroll(); }
   }
 
+  // Counts each mood this person has used, most-used first.
+  function moodSummary(list){
+    var counts = {}, order = [];
+    list.forEach(function(e){
+      splitTags(e.mood).forEach(function(m){
+        if (!counts[m]){ counts[m] = 0; order.push(m); }
+        counts[m]++;
+      });
+    });
+    return order.map(function(m){ return { name:m, n:counts[m] }; })
+      .sort(function(a,b){ return b.n - a.n || a.name.localeCompare(b.name, 'ko'); });
+  }
+
+  function renderProfile(){
+    var overlay = document.getElementById('profileOverlay');
+    var body = document.getElementById('profileBody');
+    var open = overlay.style.display === 'flex';
+    var name = state.profileName;
+    var list = name ? state.entries.filter(function(e){ return e.authorName === name; }) : [];
+
+    // No name, or their last record just went away.
+    if (!name || !list.length){
+      state.profileName = null;
+      body.innerHTML = '';
+      if (open){ overlay.style.display = 'none'; unlockScroll(); }
+      return;
+    }
+
+    var moods = moodSummary(list);
+    var photos = [];
+    list.forEach(function(e){
+      (e.media || []).forEach(function(m){ if (m && m.url && m.type !== 'video') photos.push(m); });
+    });
+    var placeSeen = {}, places = [];
+    list.forEach(function(e){
+      splitTags(e.location).forEach(function(p){ if (!placeSeen[p]){ placeSeen[p] = true; places.push(p); } });
+    });
+
+    // The line reads from what they actually tagged, so it says how their records
+    // lean rather than claiming to know how they feel.
+    var status = moods.length
+      ? moodEmoji(moods[0].name) + ' ' + moods[0].name + ' 모드'
+      : '조용히 채집 중';
+
+    var face = photos.length
+      ? '<img src="'+escapeHtml(photos[0].url)+'" alt="">'
+      : escapeHtml(avatarInitial(name));
+
+    var moodHtml = moods.length
+      ? '<div class="profile-moods">' + moods.map(function(m){
+          return '<span class="profile-mood">'+moodEmoji(m.name)+escapeHtml(m.name)+
+            '<span class="mono">'+m.n+'</span></span>';
+        }).join('') + '</div>'
+      : '<p class="profile-none">아직 감흥을 남기지 않았어요.</p>';
+
+    var photoHtml = photos.length
+      ? '<div class="profile-photos">' + photos.map(function(m){
+          return '<img src="'+escapeHtml(m.url)+'" alt="채집 사진" loading="lazy">';
+        }).join('') + '</div>'
+      : '<p class="profile-none">아직 사진이 없어요.</p>';
+
+    body.innerHTML =
+      '<div class="profile-head">' +
+        '<div class="profile-avatar" style="--h:'+hashHue(name)+'">'+face+'</div>' +
+        '<div class="profile-who">' +
+          '<div class="profile-name">'+escapeHtml(name)+'</div>' +
+          '<div class="profile-status">'+status+'</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="profile-stats">' +
+        '<span><b class="mono">'+list.length+'</b>개 기록</span>' +
+        '<span><b class="mono">'+photos.length+'</b>장 사진</span>' +
+        '<span><b class="mono">'+places.length+'</b>곳 장소</span>' +
+      '</div>' +
+      '<p class="profile-sec">남긴 감흥</p>' + moodHtml +
+      '<p class="profile-sec">채집한 사진</p>' + photoHtml;
+
+    Array.prototype.forEach.call(body.querySelectorAll('.profile-photos img'), function(img){
+      img.addEventListener('click', function(){ openLightbox(img.getAttribute('src')); });
+    });
+
+    if (!open){ overlay.style.display = 'flex'; lockScroll(); }
+  }
+
+  function closeProfile(){
+    if (!state.profileName) return;
+    state.profileName = null;
+    render();
+  }
+
   function closeDetail(){
     if (!state.detailId) return;
     state.detailId = null;
@@ -1078,6 +1231,7 @@
     renderFilterButtons();
     renderBanner();
     renderDetail();
+    renderProfile();
 
     var isMap = state.view === 'map';
     document.getElementById('feed').style.display = isMap ? 'none' : '';
@@ -1267,6 +1421,11 @@
     if (e.target === e.currentTarget) closeFilterSheet();
   });
 
+  document.getElementById('profileClose').addEventListener('click', closeProfile);
+  document.getElementById('profileOverlay').addEventListener('click', function(e){
+    if (e.target === e.currentTarget) closeProfile();
+  });
+
   document.getElementById('detailClose').addEventListener('click', closeDetail);
   document.getElementById('detailOverlay').addEventListener('click', function(e){
     if (e.target === e.currentTarget) closeDetail();
@@ -1297,7 +1456,7 @@
     gateNext = next || 'write';
     gateAfter = typeof after === 'function' ? after : null;
     var editing = !!state.myName;
-    document.getElementById('gateTitle').textContent = editing ? '이름 바꾸기' : '먼저, 이름을 알려주세요';
+    document.getElementById('gateTitle').textContent = editing ? '이름 바꾸기' : '이름을 알려주세요';
     document.getElementById('gateHint').textContent = editing
       ? '바꾼 이름은 앞으로 남길 기록에 표시돼요. 이미 남긴 기록의 작성자 이름은 그대로예요.'
       : '기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.';
