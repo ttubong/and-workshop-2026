@@ -37,6 +37,9 @@
   }
   .mono{font-family:'Noto Sans KR',sans-serif; font-variant-numeric:tabular-nums;}
   a{color:var(--river);}
+  /* Lucide icons (lucide.dev, ISC) — inlined as SVG so there's no library to load.
+     They stroke in currentColor, so each icon takes the color of its own control. */
+  .ic{flex:0 0 auto; display:block;}
   .wrap{max-width:640px; margin:0 auto; padding-inline:16px; padding-block:0 96px;}
   header.top{
     position:sticky; top:0; z-index:20;
@@ -77,6 +80,7 @@
     flex:0 0 auto; border:1px solid var(--line); background:var(--card); color:var(--ink-soft);
     padding:6px 12px; border-radius:999px; font-size:13px; cursor:pointer; white-space:nowrap;
     transition:background .15s, color .15s, border-color .15s;
+    display:inline-flex; align-items:center; gap:5px;
   }
   .pill.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
   .memberrow{margin-top:8px;}
@@ -88,8 +92,8 @@
     list-style:none; display:flex; align-items:center; gap:6px;
   }
   details.itinerary summary::-webkit-details-marker{display:none;}
-  details.itinerary summary:before{content:"▸"; color:var(--moss); transition:transform .15s;}
-  details.itinerary[open] summary:before{transform:rotate(90deg);}
+  details.itinerary summary .chev{color:var(--moss); transition:transform .15s;}
+  details.itinerary[open] summary .chev{transform:rotate(90deg);}
   .itin-body{padding:0 14px 14px; font-size:13px; line-height:1.7; color:var(--ink);}
   .itin-day{margin-top:10px;}
   .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
@@ -136,6 +140,7 @@
     display:flex; align-items:center; gap:5px; font-family:'Noto Sans KR',sans-serif;
   }
   .like-btn.on{color:var(--accent); font-weight:700;}
+  .like-btn.on .ic{fill:currentColor;}
   .card-comments{margin-top:10px;}
   .comment-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
   .comment-item{font-size:13px; line-height:1.5; color:var(--ink); display:flex; align-items:baseline; gap:6px;}
@@ -246,7 +251,7 @@
           <p class="subtitle">9.15 – 9.17 워크샵, 우리가 눈과 손으로 채집한 것들</p>
         </div>
         <button type="button" class="me unset" id="meBtn">
-          <span class="avatar" id="meAvatar">＋</span>
+          <span class="avatar" id="meAvatar"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span>
           <span class="me-label" id="meLabel">이름 설정</span>
         </button>
       </div>
@@ -260,7 +265,7 @@
 
   <div class="wrap" style="padding:0;">
     <details class="itinerary">
-      <summary>워크샵 일정 훑어보기</summary>
+      <summary><svg class="ic chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>워크샵 일정 훑어보기</summary>
       <div class="itin-body">
         <div class="itin-day"><b>D1 · 9/15</b> — 도착 · 점심 · 저녁 바베큐</div>
         <div class="itin-day"><b>D2 · 9/16</b> — 아침 라면 · 화개장터 부식 · 점심 최참판댁 주막 · 저녁 닭구이</div>
@@ -273,7 +278,7 @@
   </div>
 </div>
 
-<button class="fab" id="fabAdd">＋ 채집하기</button>
+<button class="fab" id="fabAdd"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/></svg>채집하기</button>
 
 <div id="gateOverlay" class="overlay" style="display:none;">
   <div class="sheet">
@@ -335,7 +340,7 @@
 </div>
 
 <div id="lightboxOverlay" class="lightbox" style="display:none;">
-  <button class="lightbox-close" id="lightboxClose" aria-label="닫기">×</button>
+  <button class="lightbox-close" id="lightboxClose" aria-label="닫기"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
   <img id="lightboxImg" src="" alt="채집 사진 확대보기">
 </div>
 
@@ -379,6 +384,27 @@
     '웃음 터짐':'😂', '뿌듯함':'🙌', '피곤함':'😩', '아쉬움':'😔', '놀라움':'😲', '그리움':'🥺'
   };
   function moodEmoji(m){ return MOOD_EMOJI[m] || '✨'; }
+
+  // Lucide icon paths (lucide.dev, ISC licensed), inlined rather than pulling in the
+  // whole library for eight glyphs. Mood tags deliberately stay emoji — those are
+  // content the author picked, not interface chrome.
+  var ICONS = {
+    'plus':           '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    'x':              '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    'chevron-down':   '<path d="m6 9 6 6 6-6"/>',
+    'chevron-right':  '<path d="m9 18 6-6-6-6"/>',
+    'map-pin':        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    'heart':          '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+    'message-circle': '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'
+  };
+  function icon(name, size, extraClass){
+    var body = ICONS[name];
+    if (!body) return '';
+    return '<svg class="ic' + (extraClass ? ' ' + extraClass : '') + '" ' +
+      'width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" ' +
+      'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true" focusable="false">' + body + '</svg>';
+  }
 
   var state = {
     db: null,              // artifact db namespace, null until resolved / unavailable
@@ -431,11 +457,11 @@
   function splitTags(str){
     return String(str||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
   }
-  function tagBadges(str, cls, icon){
-    // icon may be a fixed string (e.g. the location pin) or a function that
+  function tagBadges(str, cls, mark){
+    // mark may be a fixed string (e.g. the location pin icon) or a function that
     // resolves a matching emoji per tag value (e.g. mood -> moodEmoji(tag)).
     return splitTags(str).map(function(t){
-      var ic = typeof icon === 'function' ? icon(t) : icon;
+      var ic = typeof mark === 'function' ? mark(t) : mark;
       return '<span class="'+cls+'">'+ic+' '+escapeHtml(t)+'</span>';
     }).join('');
   }
@@ -505,7 +531,7 @@
     } else {
       btn.classList.add('unset');
       avatar.style.removeProperty('--h');
-      avatar.textContent = '＋';
+      avatar.innerHTML = icon('plus', 18);
       label.textContent = '이름 설정';
       btn.setAttribute('aria-label', '내 이름 설정하기');
     }
@@ -520,7 +546,7 @@
     ];
     wrap.innerHTML = dims.map(function(d){
       return '<button type="button" class="pill '+(d.active?'active':'')+'" data-filter="'+d.key+'">'+
-        escapeHtml(filterButtonLabel(d.key))+' ▾</button>';
+        escapeHtml(filterButtonLabel(d.key))+icon('chevron-down', 14)+'</button>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-filter]'), function(btn){
       btn.addEventListener('click', function(){ openFilterSheet(btn.getAttribute('data-filter')); });
@@ -605,18 +631,19 @@
         return '<img src="'+src+'" alt="채집 사진" loading="lazy">';
       }).join('') + '</div>';
     }
-    var loc = tagBadges(e.location, 'loc', '📍');
+    var loc = tagBadges(e.location, 'loc', icon('map-pin', 13));
     var moodTag = tagBadges(e.mood, 'moodtag', moodEmoji);
 
     var likesObj = state.likesByEntry[e.id] || {};
     var likeNames = Object.keys(likesObj);
     var iLiked = !!(state.myName && likesObj.hasOwnProperty(state.myName));
     var likeBtn = '<button type="button" class="like-btn '+(iLiked?'on':'')+'" data-like="'+e.id+'">' +
-      (iLiked ? '♥' : '♡') + ' <span class="mono">'+likeNames.length+'</span></button>';
+      icon('heart', 15) + '<span class="mono">'+likeNames.length+'</span></button>';
 
     var comments = state.commentsByEntry[e.id] || [];
     var expanded = !!state.expandedComments[e.id];
-    var commentToggle = '<button type="button" class="comment-toggle" data-ctoggle="'+e.id+'">💬 댓글 '+comments.length+'개</button>';
+    var commentToggle = '<button type="button" class="comment-toggle" data-ctoggle="'+e.id+'">' +
+      icon('message-circle', 15) + '<span>댓글 '+comments.length+'개</span></button>';
     var commentBody = '';
     if (expanded){
       var list = comments.map(function(c){
@@ -669,7 +696,7 @@
               '<span class="daytag d2">2일 차</span>' +
             '</div>' +
             '<p class="card-text">화개장터에서 산 산수유차, 향이 진하다. 할머니가 직접 덖으셨다고.</p>' +
-            '<div class="card-foot"><span class="loc">📍 화개장터</span></div>' +
+            '<div class="card-foot"><span class="loc">'+icon('map-pin', 13)+' 화개장터</span></div>' +
           '</div>' +
         '</div>' +
         '<p style="margin-top:16px;">아직 채집한 기록이 없어요.<br>오른쪽 아래 버튼으로 첫 기록을 남겨보세요.</p>' +
@@ -1025,7 +1052,7 @@
         : '<img src="'+pf.previewUrl+'">';
       var overlay = pf.status === 'uploading' ? '<div class="up">'+pf.progress+'%</div>'
         : pf.status === 'error' ? '<div class="up err">업로드 실패</div>' : '';
-      return '<div class="thumb" data-idx="'+idx+'">'+inner+overlay+'<button type="button" class="x" data-remove="'+idx+'">×</button></div>';
+      return '<div class="thumb" data-idx="'+idx+'">'+inner+overlay+'<button type="button" class="x" aria-label="첨부 제거" data-remove="'+idx+'">'+icon('x', 12)+'</button></div>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-remove]'), function(b){
       b.addEventListener('click', function(){
