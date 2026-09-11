@@ -472,6 +472,18 @@
   </div>
 </div>
 
+<div id="detailOverlay" class="overlay" style="display:none;">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>기록 보기</h2>
+    </div>
+    <div class="sheet-body" id="detailBody"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="detailClose" style="flex:1;">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="filterSheetOverlay" class="overlay" style="display:none;">
   <div class="sheet">
     <div class="sheet-head">
@@ -529,6 +541,7 @@
     entries: [],
     removedIds: {},        // entryId -> true, from a confirmed delete until the snapshot catches up
     view: 'list',          // 'list' | 'map'
+    detailId: null,        // record shown in the detail sheet, null when closed
     filterDay: 'all',
     filterMember: 'all',
     filterMood: 'all',
@@ -881,7 +894,7 @@
       var photos = (e.media || []).length;
       var say = e.text || (photos ? '사진 ' + photos + '장' : '기록을 남겼어요');
       var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
-      return '<button type="button" class="mm" data-member="'+escapeHtml(e.authorName)+'">' +
+      return '<button type="button" class="mm" data-open="'+escapeHtml(e.id)+'">' +
           '<span class="mm-bubble"><span class="mm-say">'+escapeHtml(say)+'</span></span>' +
           '<span class="mm-puck" style="--h:'+hashHue(e.authorName)+'">' +
             escapeHtml(avatarInitial(e.authorName))+mood +
@@ -906,13 +919,78 @@
         '</div>' +
       '</div>';
 
-    Array.prototype.forEach.call(pane.querySelectorAll('[data-member]'), function(btn){
+    Array.prototype.forEach.call(pane.querySelectorAll('[data-open]'), function(btn){
       btn.addEventListener('click', function(){
-        state.filterMember = btn.getAttribute('data-member');
-        state.view = 'list';
+        state.detailId = btn.getAttribute('data-open');
         render();
       });
     });
+  }
+
+  // Cards render in two places now — the feed and the detail sheet — so their
+  // controls are wired from one place against whichever container holds them.
+  function bindCardHandlers(root){
+    Array.prototype.forEach.call(root.querySelectorAll('[data-del]'), function(btn){
+      btn.addEventListener('click', function(){ openDeleteConfirm(btn.getAttribute('data-del')); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('.card-media img'), function(img){
+      img.addEventListener('click', function(){ openLightbox(img.getAttribute('src')); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-like]'), function(btn){
+      btn.addEventListener('click', function(){ toggleLike(btn.getAttribute('data-like')); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-ctoggle]'), function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-ctoggle');
+        state.expandedComments[id] = !state.expandedComments[id];
+        render();
+      });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-cinput]'), function(inp){
+      inp.addEventListener('input', function(){ state.commentDrafts[inp.getAttribute('data-cinput')] = inp.value; });
+      inp.addEventListener('keydown', function(ev){
+        if (ev.key === 'Enter'){ ev.preventDefault(); sendComment(inp.getAttribute('data-cinput')); }
+      });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-csend]'), function(btn){
+      btn.addEventListener('click', function(){ sendComment(btn.getAttribute('data-csend')); });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-cdel]'), function(btn){
+      btn.addEventListener('click', function(){ deleteComment(btn.getAttribute('data-cdel'), btn.getAttribute('data-entry')); });
+    });
+  }
+
+  // The detail sheet mirrors whatever the feed would show for one record, so a
+  // like or comment made here lands in the same state the list reads from.
+  function renderDetail(){
+    var overlay = document.getElementById('detailOverlay');
+    var body = document.getElementById('detailBody');
+    var open = overlay.style.display === 'flex';
+
+    var entry = null;
+    if (state.detailId){
+      for (var i = 0; i < state.entries.length; i++){
+        if (state.entries[i].id === state.detailId){ entry = state.entries[i]; break; }
+      }
+      // Deleted while the sheet was open, by us or by someone else.
+      if (!entry) state.detailId = null;
+    }
+
+    if (!entry){
+      body.innerHTML = '';
+      if (open){ overlay.style.display = 'none'; unlockScroll(); }
+      return;
+    }
+
+    body.innerHTML = cardHtml(entry);
+    bindCardHandlers(body);
+    if (!open){ overlay.style.display = 'flex'; lockScroll(); }
+  }
+
+  function closeDetail(){
+    if (!state.detailId) return;
+    state.detailId = null;
+    render();
   }
 
   function render(){
@@ -920,6 +998,7 @@
     renderSegmented();
     renderFilterButtons();
     renderBanner();
+    renderDetail();
 
     var isMap = state.view === 'map';
     document.getElementById('feed').style.display = isMap ? 'none' : '';
@@ -933,34 +1012,7 @@
       return;
     }
     feed.innerHTML = filtered.map(cardHtml).join('');
-    Array.prototype.forEach.call(feed.querySelectorAll('[data-del]'), function(btn){
-      btn.addEventListener('click', function(){ openDeleteConfirm(btn.getAttribute('data-del')); });
-    });
-    Array.prototype.forEach.call(feed.querySelectorAll('.card-media img'), function(img){
-      img.addEventListener('click', function(){ openLightbox(img.getAttribute('src')); });
-    });
-    Array.prototype.forEach.call(feed.querySelectorAll('[data-like]'), function(btn){
-      btn.addEventListener('click', function(){ toggleLike(btn.getAttribute('data-like')); });
-    });
-    Array.prototype.forEach.call(feed.querySelectorAll('[data-ctoggle]'), function(btn){
-      btn.addEventListener('click', function(){
-        var id = btn.getAttribute('data-ctoggle');
-        state.expandedComments[id] = !state.expandedComments[id];
-        render();
-      });
-    });
-    Array.prototype.forEach.call(feed.querySelectorAll('[data-cinput]'), function(inp){
-      inp.addEventListener('input', function(){ state.commentDrafts[inp.getAttribute('data-cinput')] = inp.value; });
-      inp.addEventListener('keydown', function(ev){
-        if (ev.key === 'Enter'){ ev.preventDefault(); sendComment(inp.getAttribute('data-cinput')); }
-      });
-    });
-    Array.prototype.forEach.call(feed.querySelectorAll('[data-csend]'), function(btn){
-      btn.addEventListener('click', function(){ sendComment(btn.getAttribute('data-csend')); });
-    });
-    Array.prototype.forEach.call(feed.querySelectorAll('[data-cdel]'), function(btn){
-      btn.addEventListener('click', function(){ deleteComment(btn.getAttribute('data-cdel'), btn.getAttribute('data-entry')); });
-    });
+    bindCardHandlers(feed);
   }
 
   // db errors arrive as {code, message}; surface something a workshop guest can act on.
@@ -1147,6 +1199,11 @@
 
   document.getElementById('filterSheetOverlay').addEventListener('click', function(e){
     if (e.target === e.currentTarget) closeFilterSheet();
+  });
+
+  document.getElementById('detailClose').addEventListener('click', closeDetail);
+  document.getElementById('detailOverlay').addEventListener('click', function(e){
+    if (e.target === e.currentTarget) closeDetail();
   });
 
   function openItinerary(){
