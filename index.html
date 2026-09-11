@@ -416,7 +416,7 @@
 
   function cardHtml(e){
     var di = dayInfoFor(e.occurredAt);
-    var dayTag = di ? '<span class="daytag '+di.cls+'">'+di.label+'</span>' : (e.occurredAt ? '<span class="daytag d0">기타</span>' : '');
+    var dayTag = di ? '<span class="daytag '+di.cls+'">'+di.label+'</span>' : '';
     var hue = hashHue(e.authorName||'?');
     var initial = (e.authorName||'?').trim().slice(-1);
     var media = '';
