@@ -52,7 +52,9 @@
     backdrop-filter:blur(8px);
     border-bottom:1px solid var(--line);
   }
-  .top-inner{max-width:640px; margin:0 auto; padding:14px 20px 10px;}
+  /* The header sits inside .wrap, which already supplies the 20px inset, so this
+     adds none of its own — otherwise the title is indented past the cards below. */
+  .top-inner{max-width:640px; margin:0 auto; padding:14px 0 10px;}
   .eyebrow{
     font-family:'Noto Sans KR',sans-serif; font-size:11px; letter-spacing:.12em;
     text-transform:uppercase; color:var(--moss); margin:0 0 4px;
