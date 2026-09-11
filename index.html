@@ -117,10 +117,10 @@
     background:rgba(255,255,255,0.15); color:#fff; border:none; font-size:22px; line-height:1;
     cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:61;
   }
-  .card-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-  .tags-inline{display:flex; align-items:center; gap:10px; overflow:hidden; flex:1; min-width:0;}
-  .loc{font-size:12px; color:var(--river); display:flex; align-items:center; gap:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto;}
-  .moodtag{font-size:12px; color:var(--accent); display:flex; align-items:center; gap:4px; white-space:nowrap; flex:0 0 auto;}
+  .card-foot{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .tags-inline{display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; flex:1; min-width:0;}
+  .loc{font-size:12px; color:var(--river); display:flex; align-items:center; gap:4px; white-space:nowrap;}
+  .moodtag{font-size:12px; color:var(--accent); display:flex; align-items:center; gap:4px; white-space:nowrap;}
   .del{font-size:11px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 4px; flex:0 0 auto;}
   .card-actions{display:flex; align-items:center; gap:14px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line);}
   .like-btn, .comment-toggle{
@@ -130,8 +130,10 @@
   .like-btn.on{color:var(--accent); font-weight:700;}
   .card-comments{margin-top:10px;}
   .comment-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
-  .comment-item{font-size:13px; line-height:1.5; color:var(--ink);}
-  .comment-item b{font-family:'Noto Sans KR',sans-serif; font-weight:700; margin-right:6px;}
+  .comment-item{font-size:13px; line-height:1.5; color:var(--ink); display:flex; align-items:baseline; gap:6px;}
+  .comment-item b{font-family:'Noto Sans KR',sans-serif; font-weight:700; flex:0 0 auto;}
+  .comment-item .ctext{flex:1; min-width:0; overflow-wrap:break-word;}
+  .cdel{font-size:11px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 2px; flex:0 0 auto;}
   .comment-empty{font-size:12.5px; color:var(--ink-soft);}
   .comment-add{display:flex; gap:6px;}
   .comment-input{
@@ -206,6 +208,8 @@
   .err{color:var(--accent); font-size:12.5px; margin:-6px 0 12px;}
   .gate-names{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 16px;}
   .gate-name{border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 14px; font-size:13.5px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .gate-name.active-filter{background:var(--moss); border-color:var(--moss); color:#fff;}
+  .filterbar{display:flex; flex-wrap:wrap; gap:8px; margin-top:2px;}
   .setup{
     max-width:520px; margin:60px auto; padding:24px; background:var(--card); border:1px solid var(--line);
     border-radius:14px; font-size:14px; line-height:1.7;
@@ -233,8 +237,7 @@
         <span><b id="statCount">0</b>개 기록</span>
         <span><b id="statMembers">0</b>명 참여</span>
       </div>
-      <div class="scrollrow" id="dayTabs"></div>
-      <div class="scrollrow memberrow" id="memberTabs"></div>
+      <div class="filterbar" id="filterBar"></div>
     </div>
   </header>
 
@@ -280,13 +283,13 @@
       <input type="datetime-local" id="fOccurredAt">
     </label>
     <label class="field">
-      <span class="lab">장소</span>
-      <input type="text" id="fLocation" placeholder="예: 화개장터, 숙소 마당...">
+      <span class="lab">장소 (여러 개 선택 가능)</span>
+      <input type="text" id="fLocation" placeholder="직접 입력은 쉼표로 구분 (예: 화개장터, 숙소 마당)">
       <div class="chiprow" id="locChips"></div>
     </label>
     <label class="field">
-      <span class="lab">감흥</span>
-      <input type="text" id="fMood" placeholder="예: 설렘, 평온...">
+      <span class="lab">감흥 (여러 개 선택 가능)</span>
+      <input type="text" id="fMood" placeholder="직접 입력은 쉼표로 구분 (예: 설렘, 평온)">
       <div class="chiprow" id="moodChips"></div>
     </label>
     <label class="field">
@@ -318,6 +321,16 @@
     <div class="sheet-actions">
       <button class="btn ghost" id="deleteCancelBtn">취소</button>
       <button class="btn primary" id="deleteConfirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div id="filterSheetOverlay" class="overlay" style="display:none;">
+  <div class="sheet">
+    <h2 id="filterSheetTitle">필터</h2>
+    <div class="gate-names" id="filterSheetBody"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="filterSheetClose">닫기</button>
     </div>
   </div>
 </div>
@@ -362,12 +375,16 @@
     entries: [],
     filterDay: 'all',
     filterMember: 'all',
+    filterMood: 'all',
     pendingFiles: [],
     myName: null,
     likesByEntry: {},      // entryId -> { authorName: likeRowId }
     commentsByEntry: {},   // entryId -> [{id, authorName, text, createdAt}]
     expandedComments: {},  // entryId -> bool
-    commentDrafts: {}      // entryId -> in-progress comment text (survives re-render)
+    commentDrafts: {},     // entryId -> in-progress comment text (survives re-render)
+    selectedLocs: [],      // write-modal: toggled location chip values
+    selectedMoods: [],     // write-modal: toggled mood chip values
+    bannerMsg: null        // single source of truth for the top banner (see renderBanner)
   };
 
   function hashHue(str){
@@ -385,6 +402,26 @@
     var mmdd = occurredAt.slice(5,10);
     for (var i=0;i<DAYS.length;i++){ if (DAYS[i].key===mmdd) return DAYS[i]; }
     return null;
+  }
+  function dayLabelForKey(key){
+    for (var i=0;i<DAYS.length;i++){ if (DAYS[i].key===key) return DAYS[i].label; }
+    return null;
+  }
+  // Location/mood are stored as a single comma-separated text column so multiple
+  // values can be selected without a schema change. These helpers split/join/badge them.
+  function splitTags(str){
+    return String(str||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+  function tagBadges(str, cls, icon){
+    return splitTags(str).map(function(t){
+      return '<span class="'+cls+'">'+icon+' '+escapeHtml(t)+'</span>';
+    }).join('');
+  }
+  function collectTags(typedValue, selectedArr){
+    var extra = splitTags(typedValue);
+    var all = selectedArr.slice();
+    extra.forEach(function(v){ if (all.indexOf(v) === -1) all.push(v); });
+    return all.join(', ');
   }
   function fmtWhen(occurredAt){
     if (!occurredAt) return '';
@@ -418,42 +455,85 @@
     return list;
   }
 
-  function renderTabs(){
-    var dayWrap = document.getElementById('dayTabs');
-    var counts = {'09-11':0,'09-12':0,'09-13':0};
+  function distinctMoods(){
+    var seen = {}, list = [];
     state.entries.forEach(function(e){
-      var di = dayInfoFor(e.occurredAt);
-      if (di) counts[di.key] = (counts[di.key]||0)+1;
+      splitTags(e.mood).forEach(function(m){ if (!seen[m]){ seen[m]=true; list.push(m); } });
     });
-    var html = '<button class="pill '+(state.filterDay==='all'?'active':'')+'" data-day="all">전체 일정</button>';
-    DAYS.forEach(function(d){
-      var active = state.filterDay===d.key;
-      html += '<button class="pill '+(active?('day-active-'+d.short.slice(1)):'')+'" data-day="'+d.key+'">'+
-        d.label+' <span class="mono">'+(counts[d.key]||0)+'</span></button>';
-    });
-    dayWrap.innerHTML = html;
-    Array.prototype.forEach.call(dayWrap.querySelectorAll('[data-day]'), function(btn){
-      btn.addEventListener('click', function(){ state.filterDay = btn.getAttribute('data-day'); render(); });
-    });
+    list.sort(function(a,b){ return a.localeCompare(b,'ko'); });
+    return list;
+  }
 
-    var memberWrap = document.getElementById('memberTabs');
-    var members = distinctMembers();
-    var mhtml = '<button class="pill '+(state.filterMember==='all'?'active':'')+'" data-m="all">전체 멤버</button>';
-    members.forEach(function(name){
-      var active = state.filterMember===name;
-      mhtml += '<button class="pill '+(active?'active':'')+'" data-m="'+escapeHtml(name)+'">'+escapeHtml(name)+'</button>';
-    });
-    memberWrap.innerHTML = mhtml;
-    Array.prototype.forEach.call(memberWrap.querySelectorAll('[data-m]'), function(btn){
-      btn.addEventListener('click', function(){ state.filterMember = btn.getAttribute('data-m'); render(); });
-    });
+  function filterButtonLabel(kind){
+    if (kind === 'day') return state.filterDay === 'all' ? '전체 일정' : (dayLabelForKey(state.filterDay) || '전체 일정');
+    if (kind === 'member') return state.filterMember === 'all' ? '전체 멤버' : state.filterMember;
+    return state.filterMood === 'all' ? '전체 감흥' : state.filterMood;
+  }
 
+  function renderFilterButtons(){
+    var wrap = document.getElementById('filterBar');
+    var dims = [
+      { key:'day', active: state.filterDay !== 'all' },
+      { key:'member', active: state.filterMember !== 'all' },
+      { key:'mood', active: state.filterMood !== 'all' }
+    ];
+    wrap.innerHTML = dims.map(function(d){
+      return '<button type="button" class="pill '+(d.active?'active':'')+'" data-filter="'+d.key+'">'+
+        escapeHtml(filterButtonLabel(d.key))+' ▾</button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-filter]'), function(btn){
+      btn.addEventListener('click', function(){ openFilterSheet(btn.getAttribute('data-filter')); });
+    });
     document.getElementById('statCount').textContent = state.entries.length;
-    document.getElementById('statMembers').textContent = members.length;
+    document.getElementById('statMembers').textContent = distinctMembers().length;
+  }
+
+  var currentFilterKind = null;
+  function openFilterSheet(kind){
+    currentFilterKind = kind;
+    var title, allLabel, options, current;
+    if (kind === 'day'){
+      title = '일정 선택'; allLabel = '전체 일정';
+      options = DAYS.map(function(d){ return { value:d.key, label:d.label }; });
+      current = state.filterDay;
+    } else if (kind === 'member'){
+      title = '멤버 선택'; allLabel = '전체 멤버';
+      options = distinctMembers().map(function(m){ return { value:m, label:m }; });
+      current = state.filterMember;
+    } else {
+      title = '감흥 선택'; allLabel = '전체 감흥';
+      options = distinctMoods().map(function(m){ return { value:m, label:m }; });
+      current = state.filterMood;
+    }
+    document.getElementById('filterSheetTitle').textContent = title;
+    var body = document.getElementById('filterSheetBody');
+    var html = '<button type="button" class="gate-name '+(current==='all'?'active-filter':'')+'" data-fval="all">'+escapeHtml(allLabel)+'</button>';
+    html += options.map(function(o){
+      return '<button type="button" class="gate-name '+(current===o.value?'active-filter':'')+'" data-fval="'+escapeHtml(o.value)+'">'+escapeHtml(o.label)+'</button>';
+    }).join('');
+    if (!options.length){
+      html += '<span class="comment-empty">아직 선택할 수 있는 항목이 없어요.</span>';
+    }
+    body.innerHTML = html;
+    Array.prototype.forEach.call(body.querySelectorAll('[data-fval]'), function(btn){
+      btn.addEventListener('click', function(){
+        var v = btn.getAttribute('data-fval');
+        if (currentFilterKind === 'day') state.filterDay = v;
+        else if (currentFilterKind === 'member') state.filterMember = v;
+        else state.filterMood = v;
+        closeFilterSheet();
+        render();
+      });
+    });
+    document.getElementById('filterSheetOverlay').style.display = 'flex';
+  }
+  function closeFilterSheet(){
+    document.getElementById('filterSheetOverlay').style.display = 'none';
   }
 
   function renderBanner(){
-    document.getElementById('banner').innerHTML = '';
+    var el = document.getElementById('banner');
+    el.innerHTML = state.bannerMsg ? ('<div class="banner warn">'+escapeHtml(state.bannerMsg)+'</div>') : '';
   }
 
   function cardHtml(e){
@@ -468,8 +548,8 @@
         return '<img src="'+m.url+'" alt="채집 사진" loading="lazy">';
       }).join('') + '</div>';
     }
-    var loc = e.location ? '<span class="loc">📍 '+escapeHtml(e.location)+'</span>' : '';
-    var moodTag = e.mood ? '<span class="moodtag">✨ '+escapeHtml(e.mood)+'</span>' : '';
+    var loc = tagBadges(e.location, 'loc', '📍');
+    var moodTag = tagBadges(e.mood, 'moodtag', '✨');
 
     var likesObj = state.likesByEntry[e.id] || {};
     var likeNames = Object.keys(likesObj);
@@ -483,7 +563,9 @@
     var commentBody = '';
     if (expanded){
       var list = comments.map(function(c){
-        return '<div class="comment-item"><b>'+escapeHtml(c.authorName)+'</b> '+escapeHtml(c.text)+'</div>';
+        var canDel = state.myName && c.authorName === state.myName;
+        var delBtn = canDel ? '<button type="button" class="cdel" data-cdel="'+c.id+'" data-entry="'+e.id+'">삭제</button>' : '';
+        return '<div class="comment-item"><b>'+escapeHtml(c.authorName)+'</b><span class="ctext">'+escapeHtml(c.text)+'</span>'+delBtn+'</div>';
       }).join('') || '<div class="comment-empty">아직 댓글이 없어요.</div>';
       var draft = state.commentDrafts[e.id] || '';
       commentBody =
@@ -536,7 +618,7 @@
   }
 
   function render(){
-    renderTabs();
+    renderFilterButtons();
     renderBanner();
     var filtered = state.entries.filter(function(e){
       if (state.filterDay !== 'all'){
@@ -544,6 +626,7 @@
         if (!di || di.key !== state.filterDay) return false;
       }
       if (state.filterMember !== 'all' && e.authorName !== state.filterMember) return false;
+      if (state.filterMood !== 'all' && splitTags(e.mood).indexOf(state.filterMood) === -1) return false;
       return true;
     });
     var feed = document.getElementById('feed');
@@ -577,6 +660,9 @@
     Array.prototype.forEach.call(feed.querySelectorAll('[data-csend]'), function(btn){
       btn.addEventListener('click', function(){ sendComment(btn.getAttribute('data-csend')); });
     });
+    Array.prototype.forEach.call(feed.querySelectorAll('[data-cdel]'), function(btn){
+      btn.addEventListener('click', function(){ deleteComment(btn.getAttribute('data-cdel'), btn.getAttribute('data-entry')); });
+    });
   }
 
   function toggleLike(entryId){
@@ -594,8 +680,42 @@
     if (!state.myName){ openGate(); return; }
     var text = (state.commentDrafts[entryId] || '').trim();
     if (!text) return;
-    sb.from('entry_comments').insert({ entry_id: entryId, author_name: state.myName, text: text }).then(function(res){
-      if (!res.error){ state.commentDrafts[entryId] = ''; }
+    state.commentDrafts[entryId] = '';
+    render();
+    // Insert and read the row straight back with .select() so the comment shows up
+    // immediately via an optimistic local update, instead of relying solely on the
+    // realtime subscription (which may be delayed, or never fire if the entry_comments
+    // table hasn't been added to the realtime publication in Supabase).
+    sb.from('entry_comments').insert({ entry_id: entryId, author_name: state.myName, text: text }).select().then(function(res){
+      if (res.error){
+        state.commentDrafts[entryId] = text;
+        state.bannerMsg = '댓글 등록에 실패했어요 (' + res.error.message + ').';
+        render();
+        return;
+      }
+      var row = res.data && res.data[0];
+      if (row){
+        if (!state.commentsByEntry[entryId]) state.commentsByEntry[entryId] = [];
+        state.commentsByEntry[entryId].push({ id: row.id, authorName: row.author_name, text: row.text, createdAt: row.created_at });
+        state.expandedComments[entryId] = true;
+      }
+      render();
+    });
+  }
+
+  function deleteComment(commentId, entryId){
+    var list = state.commentsByEntry[entryId] || [];
+    var idx = -1;
+    for (var i=0;i<list.length;i++){ if (list[i].id === commentId){ idx = i; break; } }
+    var removed = idx >= 0 ? list[idx] : null;
+    if (idx >= 0) list.splice(idx,1);
+    render();
+    sb.from('entry_comments').delete().eq('id', commentId).then(function(res){
+      if (res.error){
+        if (removed) list.splice(Math.min(idx, list.length), 0, removed);
+        state.bannerMsg = '댓글 삭제에 실패했어요 (' + res.error.message + ').';
+        render();
+      }
     });
   }
 
@@ -633,7 +753,42 @@
     if (!pendingDeleteId) { closeDeleteConfirm(); return; }
     var id = pendingDeleteId;
     closeDeleteConfirm();
-    sb.from('entries').delete().eq('id', id).then(function(){});
+    deleteEntryAndMedia(id);
+  });
+
+  // Deletes the entry row, then removes its Storage media files — but only the
+  // ones no other entry still references, so shared/duplicated images survive.
+  function deleteEntryAndMedia(id){
+    var entry = null;
+    for (var i=0;i<state.entries.length;i++){ if (state.entries[i].id === id){ entry = state.entries[i]; break; } }
+    var mediaPaths = entry ? entry.media.map(function(m){ return m.path; }).filter(Boolean) : [];
+    sb.from('entries').delete().eq('id', id).then(function(res){
+      if (res.error){
+        state.bannerMsg = '삭제 중 문제가 생겼어요 (' + res.error.message + ').';
+        render();
+        return;
+      }
+      if (!mediaPaths.length) return;
+      sb.from('entries').select('media').then(function(res2){
+        var stillUsed = {};
+        if (!res2.error){
+          (res2.data || []).forEach(function(row){
+            (Array.isArray(row.media) ? row.media : []).forEach(function(m){
+              if (m && m.path) stillUsed[m.path] = true;
+            });
+          });
+        }
+        var toRemove = mediaPaths.filter(function(p){ return !stillUsed[p]; });
+        if (toRemove.length){
+          sb.storage.from(MEDIA_BUCKET).remove(toRemove).then(function(){});
+        }
+      });
+    });
+  }
+
+  document.getElementById('filterSheetClose').addEventListener('click', closeFilterSheet);
+  document.getElementById('filterSheetOverlay').addEventListener('click', function(e){
+    if (e.target === e.currentTarget) closeFilterSheet();
   });
 
   function openGate(){
@@ -669,6 +824,8 @@
     document.getElementById('fMood').value = '';
     document.getElementById('fText').value = '';
     state.pendingFiles = [];
+    state.selectedLocs = [];
+    state.selectedMoods = [];
     renderLocChips();
     renderMoodChips();
     renderThumbs();
@@ -679,14 +836,16 @@
 
   function renderLocChips(){
     var wrap = document.getElementById('locChips');
-    var current = document.getElementById('fLocation').value;
     wrap.innerHTML = LOC_PRESETS.map(function(p){
-      return '<button type="button" class="chip '+(current===p?'on':'')+'" data-loc="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
+      var on = state.selectedLocs.indexOf(p) !== -1;
+      return '<button type="button" class="chip '+(on?'on':'')+'" data-loc="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-loc]'), function(b){
       b.addEventListener('click', function(e){
         e.preventDefault();
-        document.getElementById('fLocation').value = b.getAttribute('data-loc');
+        var v = b.getAttribute('data-loc');
+        var idx = state.selectedLocs.indexOf(v);
+        if (idx === -1) state.selectedLocs.push(v); else state.selectedLocs.splice(idx,1);
         renderLocChips();
       });
     });
@@ -694,14 +853,16 @@
 
   function renderMoodChips(){
     var wrap = document.getElementById('moodChips');
-    var current = document.getElementById('fMood').value;
     wrap.innerHTML = MOOD_PRESETS.map(function(p){
-      return '<button type="button" class="chip '+(current===p?'on':'')+'" data-mood="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
+      var on = state.selectedMoods.indexOf(p) !== -1;
+      return '<button type="button" class="chip '+(on?'on':'')+'" data-mood="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-mood]'), function(b){
       b.addEventListener('click', function(e){
         e.preventDefault();
-        document.getElementById('fMood').value = b.getAttribute('data-mood');
+        var v = b.getAttribute('data-mood');
+        var idx = state.selectedMoods.indexOf(v);
+        if (idx === -1) state.selectedMoods.push(v); else state.selectedMoods.splice(idx,1);
         renderMoodChips();
       });
     });
@@ -748,8 +909,8 @@
 
   document.getElementById('modalSave').addEventListener('click', function(){
     var text = document.getElementById('fText').value.trim();
-    var location = document.getElementById('fLocation').value.trim();
-    var mood = document.getElementById('fMood').value.trim();
+    var location = collectTags(document.getElementById('fLocation').value, state.selectedLocs);
+    var mood = collectTags(document.getElementById('fMood').value, state.selectedMoods);
     var occurredAt = document.getElementById('fOccurredAt').value;
     var errEl = document.getElementById('formErr');
 
@@ -803,6 +964,8 @@
         document.getElementById('fText').value = '';
         document.getElementById('fLocation').value = '';
         document.getElementById('fMood').value = '';
+        state.selectedLocs = [];
+        state.selectedMoods = [];
         renderLocChips();
         renderMoodChips();
         state.pendingFiles = state.pendingFiles.filter(function(pf){ return pf.status === 'error'; });
@@ -907,10 +1070,10 @@
   function fetchEntries(){
     return sb.from('entries').select('*').order('occurred_at', { ascending: false }).then(function(res){
       if (res.error){
-        document.getElementById('banner').innerHTML =
-          '<div class="banner warn">데이터를 불러오지 못했어요 (' + res.error.message + '). Supabase 테이블 정책(RLS)을 확인해주세요.</div>';
+        state.bannerMsg = '데이터를 불러오지 못했어요 (' + res.error.message + '). Supabase 테이블 정책(RLS)을 확인해주세요.';
         return;
       }
+      state.bannerMsg = null;
       state.entries = (res.data || []).map(mapRow);
     });
   }
