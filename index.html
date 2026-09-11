@@ -153,10 +153,14 @@
   /* Whichever one you are reaching for comes to the front, so an overlap never
      hides the message you are trying to read. */
   .mm:hover, .mm:focus-visible{z-index:3;}
+  /* The slot keeps a two-line height and the bubble sits at its bottom, so a
+     one-line message gets a one-line bubble while the avatars below still line
+     up across a cluster. */
+  .mm-top{
+    width:100%; height:46px;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
   .mm-bubble{
-    /* Two lines tall whatever the message, so the avatars below line up
-       across a cluster instead of stepping up and down. */
-    min-height:46px; box-sizing:border-box;
     position:relative; max-width:100%; margin-bottom:2px;
     background:var(--card); border:1px solid var(--line); border-radius:12px;
     padding:6px 9px; font-size:11.5px; line-height:1.4; text-align:center;
@@ -942,7 +946,7 @@
       var rot = ((hashInt(e.id + 'r') % 61) - 30) / 10;
       var nudge = 'transform:translate('+dx+'px,'+dy+'px) rotate('+rot+'deg);';
       return '<button type="button" class="mm" style="'+nudge+'" data-open="'+escapeHtml(e.id)+'">' +
-          '<span class="mm-bubble"><span class="mm-say">'+sayHtml+'</span></span>' +
+          '<span class="mm-top"><span class="mm-bubble"><span class="mm-say">'+sayHtml+'</span></span></span>' +
           '<span class="mm-puck" style="--h:'+hashHue(e.authorName)+'">' +
             escapeHtml(avatarInitial(e.authorName))+mood +
           '</span>' +
