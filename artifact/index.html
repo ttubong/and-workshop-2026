@@ -114,11 +114,8 @@
   .seg.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 3px var(--shadow);}
   /* Map view: each member's latest message and mood, on a map-like ground.
      The ground is decorative — entries carry place names, not coordinates. */
-  .mapcap{
-    font-size:11px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--ink-soft); text-align:center; margin:16px 0 14px;
-  }
   .mapclusters{
+    margin-top:16px;
     display:flex; flex-wrap:wrap; justify-content:center;
     align-items:flex-start; gap:14px;
   }
@@ -947,7 +944,6 @@
     }
 
     pane.innerHTML =
-      '<p class="mapcap">장소별 채집 현황</p>' +
       '<div class="mapclusters">' +
           order.map(function(key){
             var list = groups[key];
