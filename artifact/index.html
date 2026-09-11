@@ -114,23 +114,12 @@
   .seg.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 3px var(--shadow);}
   /* Map view: each member's latest message and mood, on a map-like ground.
      The ground is decorative — entries carry place names, not coordinates. */
-  .mapground{
-    position:relative; margin-top:16px; padding:20px 14px 18px;
-    border:1px solid var(--line); border-radius:16px; background:var(--paper-2);
-    overflow:hidden;
-  }
-  .mapground:before{
-    content:""; position:absolute; inset:0; pointer-events:none; opacity:.3;
-    background:
-      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 40px,
-      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 40px 100%;
-  }
   .mapcap{
-    position:relative; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
-    color:var(--ink-soft); text-align:center; margin:0 0 16px;
+    font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-soft); text-align:center; margin:16px 0 14px;
   }
   .mapclusters{
-    position:relative; display:flex; flex-wrap:wrap; justify-content:center;
+    display:flex; flex-wrap:wrap; justify-content:center;
     align-items:flex-start; gap:14px;
   }
   /* One place per cluster. A dashed tint holds its records together, and the gap
@@ -905,9 +894,8 @@
     }
 
     pane.innerHTML =
-      '<div class="mapground">' +
-        '<p class="mapcap">장소별 채집 현황</p>' +
-        '<div class="mapclusters">' +
+      '<p class="mapcap">장소별 채집 현황</p>' +
+      '<div class="mapclusters">' +
           order.map(function(key){
             var list = groups[key];
             var head = key === NO_PLACE
@@ -916,7 +904,6 @@
             return '<div class="mapcluster">'+head+
               '<div class="mapcluster-body">'+list.map(puckHtml).join('')+'</div></div>';
           }).join('') +
-        '</div>' +
       '</div>';
 
     Array.prototype.forEach.call(pane.querySelectorAll('[data-open]'), function(btn){
