@@ -183,6 +183,10 @@
     font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:19px;
     box-shadow:0 0 0 3px var(--card), 0 3px 10px var(--shadow);
   }
+  /* A record with a photo shows it in place of the initial. Videos have no
+     still to use, so those keep the initial. */
+  .mm-puck.has-photo{background:var(--paper-2);}
+  .mm-photo{width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;}
   .mm-mood{
     position:absolute; right:-5px; bottom:-3px; font-size:15px; line-height:1;
     background:var(--card); border-radius:50%; padding:2px;
@@ -918,6 +922,14 @@
       var sayHtml = (photos ? icon('image', 12) : '') +
         (say ? '<span class="mm-text">' + escapeHtml(say) + '</span>' : '');
       var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
+      var shot = null;
+      (e.media || []).forEach(function(m){
+        if (!shot && m && m.url && m.type !== 'video') shot = m;
+      });
+      // The name sits right below, so the image carries no alt of its own.
+      var face = shot
+        ? '<img class="mm-photo" src="'+escapeHtml(shot.url)+'" alt="" loading="lazy">'
+        : escapeHtml(avatarInitial(e.authorName));
       // Offsets come from the record's id, so they hold still across renders
       // instead of reshuffling every time the feed updates.
       var dx = (hashInt(e.id + 'x') % 19) - 9;
@@ -926,8 +938,8 @@
       var nudge = 'transform:translate('+dx+'px,'+dy+'px) rotate('+rot+'deg);';
       return '<button type="button" class="mm" style="'+nudge+'" data-open="'+escapeHtml(e.id)+'">' +
           '<span class="mm-top"><span class="mm-bubble"><span class="mm-say">'+sayHtml+'</span></span></span>' +
-          '<span class="mm-puck" style="--h:'+hashHue(e.authorName)+'">' +
-            escapeHtml(avatarInitial(e.authorName))+mood +
+          '<span class="mm-puck'+(shot ? ' has-photo' : '')+'" style="--h:'+hashHue(e.authorName)+'">' +
+            face+mood +
           '</span>' +
           '<span class="mm-name">'+escapeHtml(e.authorName)+'</span>' +
           '<span class="mm-where"><span>'+escapeHtml(fmtWhen(e.occurredAt))+'</span></span>' +
