@@ -103,6 +103,31 @@
   .itin-day:first-child{margin-top:0;}
   .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
   .feed{margin-top:16px; display:flex; flex-direction:column; gap:12px;}
+  /* View switch, sitting just under the header's rule */
+  .segmented{
+    display:flex; gap:2px; padding:3px; margin:14px 0 0;
+    background:var(--paper-2); border:1px solid var(--line); border-radius:999px;
+  }
+  .seg{
+    flex:1 1 0; min-width:0; border:none; background:none; color:var(--ink-soft);
+    font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:500;
+    padding:7px 12px; border-radius:999px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    transition:background .15s, color .15s;
+  }
+  .seg.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 3px var(--shadow);}
+  /* Place view: the archive counted by where things were collected */
+  .places{margin-top:16px; display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:10px;}
+  .place{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 13px; text-align:left; cursor:pointer; font-family:inherit; color:var(--ink);
+    display:flex; flex-direction:column; gap:7px; box-shadow:0 2px 10px var(--shadow);
+  }
+  .place-name{display:flex; align-items:center; gap:5px; font-size:14px; font-weight:700; min-width:0;}
+  .place-name span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .place-meta{font-size:12px; color:var(--ink-soft);}
+  .place-bar{height:4px; border-radius:999px; background:var(--paper-2); overflow:hidden;}
+  .place-bar i{display:block; height:100%; background:var(--moss);}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 2px 10px var(--shadow);}
   .card-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .avatar{
@@ -286,8 +311,13 @@
   </header>
 
   <div class="wrap" style="padding:0;">
+    <div class="segmented" role="tablist" aria-label="보기 전환">
+      <button type="button" class="seg on" data-view="list" role="tab" aria-selected="true">리스트뷰</button>
+      <button type="button" class="seg" data-view="map" role="tab" aria-selected="false">지도뷰</button>
+    </div>
     <div id="banner"></div>
     <div class="feed" id="feed"></div>
+    <div class="places" id="places" style="display:none;"></div>
   </div>
 </div>
 
@@ -465,7 +495,9 @@
   var state = {
     entries: [],
     removedIds: {},        // entryId -> true, from a confirmed delete until the refetch catches up
+    view: 'list',          // 'list' | 'map'
     filterDay: 'all',
+    filterLoc: 'all',
     filterMember: 'all',
     filterMood: 'all',
     pendingFiles: [],
@@ -565,11 +597,50 @@
     return list;
   }
 
+  function distinctLocations(){
+    var seen = {}, list = [];
+    state.entries.forEach(function(e){
+      splitTags(e.location).forEach(function(l){ if (!seen[l]){ seen[l]=true; list.push(l); } });
+    });
+    list.sort(function(a,b){ return a.localeCompare(b,'ko'); });
+    return list;
+  }
+
+  // The day/member/mood filters narrow both views. The place filter only makes
+  // sense in the list, so the map view ignores it (and hides its control).
+  function filteredEntries(useLoc){
+    return state.entries.filter(function(e){
+      if (state.filterDay !== 'all'){
+        var di = dayInfoFor(e.occurredAt);
+        if (!di || di.key !== state.filterDay) return false;
+      }
+      if (useLoc && state.filterLoc !== 'all' && splitTags(e.location).indexOf(state.filterLoc) === -1) return false;
+      if (state.filterMember !== 'all' && e.authorName !== state.filterMember) return false;
+      if (state.filterMood !== 'all' && splitTags(e.mood).indexOf(state.filterMood) === -1) return false;
+      return true;
+    });
+  }
+
   function filterButtonLabel(kind){
     if (kind === 'day') return state.filterDay === 'all' ? '전체 일정' : (dayLabelForKey(state.filterDay) || '전체 일정');
+    if (kind === 'loc') return state.filterLoc === 'all' ? '전체 장소' : state.filterLoc;
     if (kind === 'member') return state.filterMember === 'all' ? '전체 멤버' : state.filterMember;
     return state.filterMood === 'all' ? '전체 감흥' : state.filterMood;
   }
+
+  function renderSegmented(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
+      var on = btn.getAttribute('data-view') === state.view;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
+    btn.addEventListener('click', function(){
+      state.view = btn.getAttribute('data-view');
+      render();
+    });
+  });
 
   function renderMe(){
     var btn = document.getElementById('meBtn');
@@ -593,9 +664,11 @@
     var wrap = document.getElementById('filterBar');
     var dims = [
       { key:'day', active: state.filterDay !== 'all' },
+      { key:'loc', active: state.filterLoc !== 'all' },
       { key:'member', active: state.filterMember !== 'all' },
       { key:'mood', active: state.filterMood !== 'all' }
     ];
+    if (state.view === 'map') dims = dims.filter(function(d){ return d.key !== 'loc'; });
     wrap.innerHTML = dims.map(function(d){
       return '<button type="button" class="pill '+(d.active?'active':'')+'" data-filter="'+d.key+'">'+
         escapeHtml(filterButtonLabel(d.key))+icon('chevron-down', 14)+'</button>';
@@ -615,6 +688,10 @@
       title = '일정 선택'; allLabel = '전체 일정';
       options = DAYS.map(function(d){ return { value:d.key, label:d.label }; });
       current = state.filterDay;
+    } else if (kind === 'loc'){
+      title = '장소 선택'; allLabel = '전체 장소';
+      options = distinctLocations().map(function(m){ return { value:m, label:m }; });
+      current = state.filterLoc;
     } else if (kind === 'member'){
       title = '멤버 선택'; allLabel = '전체 멤버';
       options = distinctMembers().map(function(m){ return { value:m, label:m }; });
@@ -638,6 +715,7 @@
       btn.addEventListener('click', function(){
         var v = btn.getAttribute('data-fval');
         if (currentFilterKind === 'day') state.filterDay = v;
+        else if (currentFilterKind === 'loc') state.filterLoc = v;
         else if (currentFilterKind === 'member') state.filterMember = v;
         else state.filterMood = v;
         closeFilterSheet();
@@ -758,19 +836,53 @@
     );
   }
 
+  function renderPlaces(){
+    var wrap = document.getElementById('places');
+    var stats = {}, order = [];
+    filteredEntries(false).forEach(function(e){
+      splitTags(e.location).forEach(function(loc){
+        if (!stats[loc]){ stats[loc] = { name:loc, count:0, members:{} }; order.push(loc); }
+        stats[loc].count++;
+        stats[loc].members[e.authorName] = true;
+      });
+    });
+    var list = order.map(function(k){ return stats[k]; }).sort(function(a,b){
+      return b.count - a.count || a.name.localeCompare(b.name, 'ko');
+    });
+    if (!list.length){
+      wrap.innerHTML = '<div class="empty" style="grid-column:1/-1;">장소가 적힌 기록이 아직 없어요.<br>기록을 남길 때 장소를 함께 적으면 여기에 모입니다.</div>';
+      return;
+    }
+    var max = list[0].count;
+    wrap.innerHTML = list.map(function(p){
+      var pct = Math.max(6, Math.round((p.count / max) * 100));
+      return '<button type="button" class="place" data-place="'+escapeHtml(p.name)+'">' +
+        '<span class="place-name">'+icon('map-pin', 14)+'<span>'+escapeHtml(p.name)+'</span></span>' +
+        '<span class="place-meta"><b class="mono">'+p.count+'</b>개 기록 · '+Object.keys(p.members).length+'명</span>' +
+        '<span class="place-bar"><i style="width:'+pct+'%"></i></span>' +
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-place]'), function(btn){
+      btn.addEventListener('click', function(){
+        state.filterLoc = btn.getAttribute('data-place');
+        state.view = 'list';
+        render();
+      });
+    });
+  }
+
   function render(){
     renderMe();
+    renderSegmented();
     renderFilterButtons();
     renderBanner();
-    var filtered = state.entries.filter(function(e){
-      if (state.filterDay !== 'all'){
-        var di = dayInfoFor(e.occurredAt);
-        if (!di || di.key !== state.filterDay) return false;
-      }
-      if (state.filterMember !== 'all' && e.authorName !== state.filterMember) return false;
-      if (state.filterMood !== 'all' && splitTags(e.mood).indexOf(state.filterMood) === -1) return false;
-      return true;
-    });
+
+    var isMap = state.view === 'map';
+    document.getElementById('feed').style.display = isMap ? 'none' : '';
+    document.getElementById('places').style.display = isMap ? '' : 'none';
+    if (isMap){ renderPlaces(); return; }
+
+    var filtered = filteredEntries(true);
     var feed = document.getElementById('feed');
     if (!filtered.length){
       feed.innerHTML = state.entries.length ? '<div class="empty">이 필터에는 아직 기록이 없어요.</div>' : sampleHtml();
