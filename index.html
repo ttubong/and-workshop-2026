@@ -116,6 +116,66 @@
     transition:background .15s, color .15s;
   }
   .seg.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 3px var(--shadow);}
+  /* Map view: each member's latest message and mood, on a map-like ground.
+     The ground is decorative — entries carry place names, not coordinates. */
+  .mapground{
+    position:relative; margin-top:16px; padding:20px 14px 18px;
+    border:1px solid var(--line); border-radius:16px; background:var(--paper-2);
+    overflow:hidden;
+  }
+  .mapground:before{
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.3;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 40px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 40px 100%;
+  }
+  .mapcap{
+    position:relative; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-soft); text-align:center; margin:0 0 16px;
+  }
+  .mapmembers{
+    position:relative; display:flex; flex-wrap:wrap; justify-content:center; gap:24px 16px;
+  }
+  .mm{
+    flex:0 0 auto; width:108px; padding:0; border:none; background:none; cursor:pointer;
+    font-family:inherit; color:var(--ink);
+    display:flex; flex-direction:column; align-items:center; gap:7px;
+  }
+  .mm-bubble{
+    position:relative; max-width:100%; margin-bottom:2px;
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:6px 9px; font-size:11.5px; line-height:1.4; text-align:center;
+    box-shadow:0 2px 8px var(--shadow);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    overflow-wrap:break-word;
+  }
+  .mm-bubble:after{
+    content:""; position:absolute; left:50%; bottom:-5px; width:8px; height:8px;
+    transform:translateX(-50%) rotate(45deg); background:var(--card);
+    border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+  }
+  .mm-puck{
+    position:relative; width:48px; height:48px; border-radius:50%;
+    background:hsl(var(--h,140) 40% var(--avatar-l));
+    color:hsl(var(--h,140) 55% var(--avatar-l2));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:19px;
+    box-shadow:0 0 0 3px var(--card), 0 3px 10px var(--shadow);
+  }
+  .mm-mood{
+    position:absolute; right:-5px; bottom:-3px; font-size:15px; line-height:1;
+    background:var(--card); border-radius:50%; padding:2px;
+    box-shadow:0 1px 4px var(--shadow);
+  }
+  .mm-name{
+    font-size:12.5px; font-weight:700; max-width:100%;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .mm-where{
+    font-size:10.5px; color:var(--ink-soft); max-width:100%;
+    display:flex; align-items:center; gap:3px; min-width:0;
+  }
+  .mm-where span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 2px 10px var(--shadow);}
   .card-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .avatar{
@@ -806,8 +866,57 @@
   }
 
   function renderMapPane(){
-    document.getElementById('mapPane').innerHTML =
-      '<div class="empty" style="margin-top:16px;">업데이트 중</div>';
+    var pane = document.getElementById('mapPane');
+    var entries = filteredEntries();
+
+    // Entries arrive newest-first, so the first one seen for a name is that
+    // member's latest. Compare occurredAt anyway rather than trust the order.
+    var latest = {}, order = [];
+    entries.forEach(function(e){
+      var prev = latest[e.authorName];
+      if (!prev){ order.push(e.authorName); latest[e.authorName] = e; return; }
+      if (String(e.occurredAt) > String(prev.occurredAt)) latest[e.authorName] = e;
+    });
+
+    if (!order.length){
+      pane.innerHTML = '<div class="empty" style="margin-top:16px;">' +
+        (state.entries.length ? '이 필터에는 아직 기록이 없어요.'
+                              : '아직 기록이 없어요.<br>첫 기록을 남기면 여기에 멤버가 나타납니다.') +
+        '</div>';
+      return;
+    }
+
+    var cards = order.map(function(name){
+      var e = latest[name];
+      var moods = splitTags(e.mood);
+      var places = splitTags(e.location);
+      var photos = (e.media || []).length;
+      var say = e.text || (photos ? '사진 ' + photos + '장을 남겼어요' : (places[0] || '기록을 남겼어요'));
+      var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
+      var where = places.length
+        ? '<span class="mm-where">'+icon('map-pin', 11)+'<span>'+escapeHtml(places[0])+'</span></span>'
+        : '<span class="mm-where"><span>'+escapeHtml(fmtWhen(e.occurredAt))+'</span></span>';
+      return '<button type="button" class="mm" data-member="'+escapeHtml(name)+'">' +
+          '<span class="mm-bubble">'+escapeHtml(say)+'</span>' +
+          '<span class="mm-puck" style="--h:'+hashHue(name)+'">'+escapeHtml(avatarInitial(name))+mood+'</span>' +
+          '<span class="mm-name">'+escapeHtml(name)+'</span>' +
+          where +
+        '</button>';
+    }).join('');
+
+    pane.innerHTML =
+      '<div class="mapground">' +
+        '<p class="mapcap">멤버별 최근 소식</p>' +
+        '<div class="mapmembers">'+cards+'</div>' +
+      '</div>';
+
+    Array.prototype.forEach.call(pane.querySelectorAll('[data-member]'), function(btn){
+      btn.addEventListener('click', function(){
+        state.filterMember = btn.getAttribute('data-member');
+        state.view = 'list';
+        render();
+      });
+    });
   }
 
   function render(){
