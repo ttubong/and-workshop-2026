@@ -34,7 +34,7 @@
     --shadow:rgba(0,0,0,0.45); --avatar-l:30%; --avatar-l2:88%;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0; background:var(--paper);}
+  html,body{margin:0; background:var(--paper); overflow-x:hidden; max-width:100%;}
   body{
     color:var(--ink);
     font-family:'Noto Sans KR','Apple SD Gothic Neo',-apple-system,sans-serif;
@@ -139,7 +139,7 @@
   .fab:focus-visible, .pill:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
     outline:2px solid var(--river); outline-offset:2px;
   }
-  .overlay{position:fixed; inset:0; background:rgba(20,24,17,0.5); z-index:50; display:flex; align-items:flex-end; justify-content:center;}
+  .overlay{position:fixed; inset:0; background:rgba(20,24,17,0.5); z-index:50; display:flex; align-items:flex-end; justify-content:center; overflow-x:hidden; max-width:100vw;}
   @media (min-width:640px){ .overlay{align-items:center;} }
   .sheet{
     background:var(--paper); width:100%; max-width:520px; border-radius:18px 18px 0 0; max-height:92vh; overflow-y:auto; overflow-x:hidden;
@@ -156,7 +156,7 @@
   }
   input[type=text], input[type=datetime-local], textarea, select{
     width:100%; min-width:0; max-width:100%; border:1px solid var(--line); background:var(--card); color:var(--ink);
-    border-radius:9px; padding:10px 11px; font-size:14.5px; font-family:inherit;
+    border-radius:9px; padding:10px 11px; font-size:14.5px; font-family:inherit; box-sizing:border-box;
   }
   input[type=datetime-local]{
     -webkit-appearance:none; appearance:none;
@@ -164,7 +164,7 @@
   label.field{min-width:0;}
   textarea{resize:vertical; min-height:80px; line-height:1.55;}
   .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
-  .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:12.5px; cursor:pointer;}
+  .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:12.5px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
   .chip.on{background:var(--moss); border-color:var(--moss); color:#fff;}
   .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:13px; color:var(--ink-soft); cursor:pointer;}
   .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
@@ -314,9 +314,9 @@
   document.getElementById('fabAdd').style.display = 'flex';
 
   var DAYS = [
-    {key:'09-15', label:'첫날', short:'D1', cls:'d1'},
-    {key:'09-16', label:'둘째날', short:'D2', cls:'d2'},
-    {key:'09-17', label:'셋째날', short:'D3', cls:'d3'}
+    {key:'09-11', label:'1일 차', short:'D1', cls:'d1'},
+    {key:'09-12', label:'2일 차', short:'D2', cls:'d2'},
+    {key:'09-13', label:'3일 차', short:'D3', cls:'d3'}
   ];
   var LOC_PRESETS = ['화개장터','최참판댁','섬진강','재첩국거리','빵집','밤나무길','바베큐 자리','닭구이집','숙소'];
 
@@ -378,12 +378,12 @@
 
   function renderTabs(){
     var dayWrap = document.getElementById('dayTabs');
-    var counts = {'09-15':0,'09-16':0,'09-17':0};
+    var counts = {'09-11':0,'09-12':0,'09-13':0};
     state.entries.forEach(function(e){
       var di = dayInfoFor(e.occurredAt);
       if (di) counts[di.key] = (counts[di.key]||0)+1;
     });
-    var html = '<button class="pill '+(state.filterDay==='all'?'active':'')+'" data-day="all">전체</button>';
+    var html = '<button class="pill '+(state.filterDay==='all'?'active':'')+'" data-day="all">전체 일정</button>';
     DAYS.forEach(function(d){
       var active = state.filterDay===d.key;
       html += '<button class="pill '+(active?('day-active-'+d.short.slice(1)):'')+'" data-day="'+d.key+'">'+
@@ -396,7 +396,7 @@
 
     var memberWrap = document.getElementById('memberTabs');
     var members = distinctMembers();
-    var mhtml = '<button class="pill '+(state.filterMember==='all'?'active':'')+'" data-m="all">전체 폴더</button>';
+    var mhtml = '<button class="pill '+(state.filterMember==='all'?'active':'')+'" data-m="all">전체 멤버</button>';
     members.forEach(function(name){
       var active = state.filterMember===name;
       mhtml += '<button class="pill '+(active?'active':'')+'" data-m="'+escapeHtml(name)+'">'+escapeHtml(name)+'</button>';
@@ -452,8 +452,8 @@
           '<div class="card sample">' +
             '<div class="card-head">' +
               '<div class="avatar" style="--h:150">수</div>' +
-              '<div class="who"><div class="name">최수정</div><div class="meta"><span class="mono">9/16 오전 11:20</span></div></div>' +
-              '<span class="daytag d2">둘째날</span>' +
+              '<div class="who"><div class="name">최수정</div><div class="meta"><span class="mono">9/12 오전 11:20</span></div></div>' +
+              '<span class="daytag d2">2일 차</span>' +
             '</div>' +
             '<p class="card-text">화개장터에서 산 산수유차, 향이 진하다. 할머니가 직접 덖으셨다고.</p>' +
             '<div class="card-foot"><span class="loc">📍 화개장터</span></div>' +
@@ -572,7 +572,8 @@
       return '<button type="button" class="chip '+(current===p?'on':'')+'" data-loc="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-loc]'), function(b){
-      b.addEventListener('click', function(){
+      b.addEventListener('click', function(e){
+        e.preventDefault();
         document.getElementById('fLocation').value = b.getAttribute('data-loc');
         renderLocChips();
       });
@@ -598,7 +599,8 @@
     });
   }
 
-  document.getElementById('filePick').addEventListener('click', function(){
+  document.getElementById('filePick').addEventListener('click', function(e){
+    e.preventDefault();
     document.getElementById('fFiles').click();
   });
   document.getElementById('fFiles').addEventListener('change', function(ev){
@@ -652,10 +654,6 @@
       saveBtn.disabled = false;
       saveBtn.textContent = '채집 저장';
       if (outcome.failedCount > 0){
-        // Entry text/location already saved successfully — only the media failed.
-        // Keep the modal open and the failed thumbnails visible so it's obvious what didn't make it,
-        // instead of silently dropping them like before. Clear the text fields so a retry
-        // creates a fresh photo-only entry rather than duplicating the text we already saved.
         document.getElementById('fText').value = '';
         document.getElementById('fLocation').value = '';
         renderLocChips();
@@ -674,11 +672,6 @@
     });
   });
 
-  // Downscale/compress photos in the browser before upload so large phone photos
-  // (often 3-15MB) don't time out or fail over weak workshop wifi/cell signal.
-  // Videos and non-image files are passed through untouched. If anything about
-  // the compression fails (unsupported format, decode error, etc.) we fall back
-  // to uploading the original file rather than blocking the user.
   function compressImage(file, maxDim, quality){
     return new Promise(function(resolve){
       if (!file.type || file.type.indexOf('image') !== 0 || file.type === 'image/gif'){
@@ -725,7 +718,7 @@
             if (res.error){
               pf.status = 'error';
               renderThumbs();
-              return null; // upload failed — skip this file rather than blocking the whole entry
+              return null;
             }
             pf.status = 'done';
             pf.progress = 100;
