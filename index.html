@@ -61,6 +61,21 @@
   .subtitle{font-size:13px; color:var(--ink-soft); margin:0 0 12px;}
   .stats{display:flex; gap:14px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
+  .top-row{display:flex; align-items:flex-start; gap:12px;}
+  .top-text{flex:1; min-width:0;}
+  .me{
+    flex:0 0 auto; background:none; border:none; padding:2px 0 0; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit;
+  }
+  .me .avatar{width:38px; height:38px; font-size:16px;}
+  .me-label{
+    font-size:10.5px; color:var(--ink-soft); max-width:60px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .me.unset .avatar{
+    background:var(--paper-2); color:var(--ink-soft);
+    border:1px dashed var(--line); font-weight:400;
+  }
   .scrollrow{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; -ms-overflow-style:none; scrollbar-width:none;}
   .scrollrow::-webkit-scrollbar{display:none;}
   .pill{
@@ -247,9 +262,17 @@
 <div id="app" class="wrap" style="display:none;">
   <header class="top">
     <div class="top-inner">
-      <p class="eyebrow">Local Vibe · Field Archive</p>
-      <h1 class="title">구례·하동 채집함</h1>
-      <p class="subtitle">9.15 – 9.17 워크샵, 우리가 눈과 손으로 채집한 것들</p>
+      <div class="top-row">
+        <div class="top-text">
+          <p class="eyebrow">Local Vibe · Field Archive</p>
+          <h1 class="title">구례·하동 채집함</h1>
+          <p class="subtitle">9.15 – 9.17 워크샵, 우리가 눈과 손으로 채집한 것들</p>
+        </div>
+        <button type="button" class="me unset" id="meBtn">
+          <span class="avatar" id="meAvatar">＋</span>
+          <span class="me-label" id="meLabel">이름 설정</span>
+        </button>
+      </div>
       <div class="stats">
         <span><b id="statCount">0</b>개 기록</span>
         <span><b id="statMembers">0</b>명 참여</span>
@@ -278,8 +301,8 @@
 <div id="gateOverlay" class="overlay" style="display:none;">
   <div class="sheet">
     <div class="sheet-head">
-      <h2>먼저, 이름을 알려주세요</h2>
-      <p class="hint">기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.</p>
+      <h2 id="gateTitle">먼저, 이름을 알려주세요</h2>
+      <p class="hint" id="gateHint">기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.</p>
     </div>
     <div class="sheet-body">
       <div class="gate-names" id="gateKnownNames"></div>
@@ -513,6 +536,25 @@
     return state.filterMood === 'all' ? '전체 감흥' : state.filterMood;
   }
 
+  function renderMe(){
+    var btn = document.getElementById('meBtn');
+    var avatar = document.getElementById('meAvatar');
+    var label = document.getElementById('meLabel');
+    if (state.myName){
+      btn.classList.remove('unset');
+      avatar.style.setProperty('--h', hashHue(state.myName));
+      avatar.textContent = avatarInitial(state.myName);
+      label.textContent = state.myName;
+      btn.setAttribute('aria-label', '내 이름 ' + state.myName + ' — 눌러서 바꾸기');
+    } else {
+      btn.classList.add('unset');
+      avatar.style.removeProperty('--h');
+      avatar.textContent = '＋';
+      label.textContent = '이름 설정';
+      btn.setAttribute('aria-label', '내 이름 설정하기');
+    }
+  }
+
   function renderFilterButtons(){
     var wrap = document.getElementById('filterBar');
     var dims = [
@@ -679,6 +721,7 @@
   }
 
   function render(){
+    renderMe();
     renderFilterButtons();
     renderBanner();
     var filtered = state.entries.filter(function(e){
@@ -897,7 +940,18 @@
     if (e.target === e.currentTarget) closeFilterSheet();
   });
 
-  function openGate(){
+  // 'write' — the name was needed before posting, so continue into the write sheet.
+  // 'profile' — opened from the header avatar, so just save the name and stop.
+  var gateNext = 'write';
+  function openGate(next){
+    gateNext = next || 'write';
+    var editing = !!state.myName;
+    document.getElementById('gateTitle').textContent = editing ? '이름 바꾸기' : '먼저, 이름을 알려주세요';
+    document.getElementById('gateHint').textContent = editing
+      ? '바꾼 이름은 앞으로 남길 기록에 표시돼요. 이미 남긴 기록의 작성자 이름은 그대로예요.'
+      : '기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.';
+    document.getElementById('gateSave').textContent = editing ? '저장' : '시작하기';
+    document.getElementById('gateNameInput').value = state.myName || '';
     var overlay = document.getElementById('gateOverlay');
     var known = distinctMembers();
     var wrap = document.getElementById('gateKnownNames');
@@ -926,8 +980,11 @@
     state.myName = v;
     saveMyName(v);
     closeGate();
-    openModal();
+    render(); // the new name changes the header avatar and which likes/comments are mine
+    if (gateNext === 'write') openModal();
   });
+
+  document.getElementById('meBtn').addEventListener('click', function(){ openGate('profile'); });
 
   function openModal(){
     if (!state.myName){ openGate(); return; }
