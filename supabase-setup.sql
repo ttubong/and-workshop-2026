@@ -31,7 +31,17 @@ create policy "public can delete entries" on entries
   for delete using (true);
 
 -- 3) 실시간 업데이트(다른 사람이 올린 기록이 자동으로 화면에 뜨게 함) 활성화
-alter publication supabase_realtime add table entries;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'entries'
+  ) then
+    alter publication supabase_realtime add table entries;
+  end if;
+end $$;
 
 -- 4) 사진/영상을 담을 Storage 버킷 생성 (공개 버킷)
 insert into storage.buckets (id, name, public)
@@ -90,7 +100,17 @@ drop policy if exists "public can delete likes" on entry_likes;
 create policy "public can delete likes" on entry_likes
   for delete using (true);
 
-alter publication supabase_realtime add table entry_likes;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'entry_likes'
+  ) then
+    alter publication supabase_realtime add table entry_likes;
+  end if;
+end $$;
 
 -- 8) 댓글 테이블
 create table if not exists entry_comments (
@@ -114,7 +134,17 @@ drop policy if exists "public can delete comments" on entry_comments;
 create policy "public can delete comments" on entry_comments
   for delete using (true);
 
-alter publication supabase_realtime add table entry_comments;
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'entry_comments'
+  ) then
+    alter publication supabase_realtime add table entry_comments;
+  end if;
+end $$;
 
 -- ============================================================
 -- 끝. 이 마이그레이션을 실행한 뒤에 배포된 최신 index.html을 올리면
