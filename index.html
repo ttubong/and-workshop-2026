@@ -717,8 +717,6 @@
     var wrap = document.getElementById('filterBar');
     document.getElementById('statCount').textContent = state.entries.length;
     document.getElementById('statMembers').textContent = distinctMembers().length;
-    // The filters act on the list; the map pane has nothing for them to narrow yet.
-    if (state.view === 'map'){ wrap.innerHTML = ''; return; }
     var dims = [
       { key:'day', active: state.filterDay !== 'all' },
       { key:'member', active: state.filterMember !== 'all' },
