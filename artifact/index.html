@@ -541,6 +541,7 @@
     view: 'list',          // 'list' | 'map'
     detailId: null,        // record shown in the detail sheet, null when closed
     filterDay: 'all',
+    filterLoc: 'all',
     filterMember: 'all',
     filterMood: 'all',
     pendingFiles: [],
@@ -647,14 +648,25 @@
         var di = dayInfoFor(e.occurredAt);
         if (!di || di.key !== state.filterDay) return false;
       }
+      if (state.filterLoc !== 'all' && splitTags(e.location).indexOf(state.filterLoc) === -1) return false;
       if (state.filterMember !== 'all' && e.authorName !== state.filterMember) return false;
       if (state.filterMood !== 'all' && splitTags(e.mood).indexOf(state.filterMood) === -1) return false;
       return true;
     });
   }
 
+  function distinctLocations(){
+    var seen = {}, list = [];
+    state.entries.forEach(function(e){
+      splitTags(e.location).forEach(function(l){ if (!seen[l]){ seen[l]=true; list.push(l); } });
+    });
+    list.sort(function(a,b){ return a.localeCompare(b,'ko'); });
+    return list;
+  }
+
   function filterButtonLabel(kind){
     if (kind === 'day') return state.filterDay === 'all' ? '전체 일정' : (dayLabelForKey(state.filterDay) || '전체 일정');
+    if (kind === 'loc') return state.filterLoc === 'all' ? '전체 장소' : state.filterLoc;
     if (kind === 'member') return state.filterMember === 'all' ? '전체 멤버' : state.filterMember;
     return state.filterMood === 'all' ? '전체 감흥' : state.filterMood;
   }
@@ -697,6 +709,7 @@
     document.getElementById('statMembers').textContent = distinctMembers().length;
     var dims = [
       { key:'day', active: state.filterDay !== 'all' },
+      { key:'loc', active: state.filterLoc !== 'all' },
       { key:'member', active: state.filterMember !== 'all' },
       { key:'mood', active: state.filterMood !== 'all' }
     ];
@@ -717,6 +730,10 @@
       title = '일정 선택'; allLabel = '전체 일정';
       options = DAYS.map(function(d){ return { value:d.key, label:d.label }; });
       current = state.filterDay;
+    } else if (kind === 'loc'){
+      title = '장소 선택'; allLabel = '전체 장소';
+      options = distinctLocations().map(function(m){ return { value:m, label:m }; });
+      current = state.filterLoc;
     } else if (kind === 'member'){
       title = '멤버 선택'; allLabel = '전체 멤버';
       options = distinctMembers().map(function(m){ return { value:m, label:m }; });
@@ -740,6 +757,7 @@
       btn.addEventListener('click', function(){
         var v = btn.getAttribute('data-fval');
         if (currentFilterKind === 'day') state.filterDay = v;
+        else if (currentFilterKind === 'loc') state.filterLoc = v;
         else if (currentFilterKind === 'member') state.filterMember = v;
         else state.filterMood = v;
         closeFilterSheet();
