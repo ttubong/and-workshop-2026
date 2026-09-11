@@ -125,15 +125,34 @@
     position:relative; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
     color:var(--ink-soft); text-align:center; margin:0 0 16px;
   }
-  .mapmembers{
-    position:relative; display:flex; flex-wrap:wrap; justify-content:center; gap:24px 16px;
+  .mapclusters{
+    position:relative; display:flex; flex-wrap:wrap; justify-content:center;
+    align-items:flex-start; gap:14px;
+  }
+  /* One place per cluster. A dashed tint holds its records together, and the gap
+     inside a cluster stays tighter than the gap between clusters. */
+  .mapcluster{
+    flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:9px;
+    padding:10px 11px 13px; border-radius:18px;
+    background:color-mix(in srgb, var(--card) 55%, transparent);
+    border:1px dashed var(--line);
+  }
+  .mapcluster-head{
+    display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--ink-soft);
+  }
+  .mapcluster-head b{color:var(--ink); font-weight:700;}
+  .mapcluster-body{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:16px 8px; max-width:330px;
   }
   .mm{
-    flex:0 0 auto; width:108px; padding:0; border:none; background:none; cursor:pointer;
+    flex:0 0 auto; width:98px; padding:0; border:none; background:none; cursor:pointer;
     font-family:inherit; color:var(--ink);
     display:flex; flex-direction:column; align-items:center; gap:7px;
   }
   .mm-bubble{
+    /* Two lines tall whatever the message, so the avatars below line up
+       across a cluster instead of stepping up and down. */
+    min-height:46px; box-sizing:border-box;
     position:relative; max-width:100%; margin-bottom:2px;
     background:var(--card); border:1px solid var(--line); border-radius:12px;
     padding:6px 9px; font-size:11.5px; line-height:1.4; text-align:center;
@@ -826,45 +845,57 @@
     var pane = document.getElementById('mapPane');
     var entries = filteredEntries();
 
-    // Entries arrive newest-first, so the first one seen for a name is that
-    // member's latest. Compare occurredAt anyway rather than trust the order.
-    var latest = {}, order = [];
-    entries.forEach(function(e){
-      var prev = latest[e.authorName];
-      if (!prev){ order.push(e.authorName); latest[e.authorName] = e; return; }
-      if (String(e.occurredAt) > String(prev.occurredAt)) latest[e.authorName] = e;
-    });
-
-    if (!order.length){
+    if (!entries.length){
       pane.innerHTML = '<div class="empty" style="margin-top:16px;">' +
         (state.entries.length ? '이 필터에는 아직 기록이 없어요.'
-                              : '아직 기록이 없어요.<br>첫 기록을 남기면 여기에 멤버가 나타납니다.') +
+                              : '아직 기록이 없어요.<br>첫 기록을 남기면 여기에 나타납니다.') +
         '</div>';
       return;
     }
 
-    var cards = order.map(function(name){
-      var e = latest[name];
+    // A record can carry several places; the first one decides its cluster.
+    // Records with no place gather in their own group at the end.
+    var NO_PLACE = '__noplace__';
+    var groups = {}, order = [];
+    entries.forEach(function(e){
+      var key = splitTags(e.location)[0] || NO_PLACE;
+      if (!groups[key]){ groups[key] = []; order.push(key); }
+      groups[key].push(e);
+    });
+    order.sort(function(a, b){
+      if (a === NO_PLACE) return 1;
+      if (b === NO_PLACE) return -1;
+      return groups[b].length - groups[a].length || a.localeCompare(b, 'ko');
+    });
+
+    function puckHtml(e){
       var moods = splitTags(e.mood);
-      var places = splitTags(e.location);
       var photos = (e.media || []).length;
-      var say = e.text || (photos ? '사진 ' + photos + '장을 남겼어요' : (places[0] || '기록을 남겼어요'));
+      var say = e.text || (photos ? '사진 ' + photos + '장' : '기록을 남겼어요');
       var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
-      var where = places.length
-        ? '<span class="mm-where">'+icon('map-pin', 11)+'<span>'+escapeHtml(places[0])+'</span></span>'
-        : '<span class="mm-where"><span>'+escapeHtml(fmtWhen(e.occurredAt))+'</span></span>';
-      return '<button type="button" class="mm" data-member="'+escapeHtml(name)+'">' +
+      return '<button type="button" class="mm" data-member="'+escapeHtml(e.authorName)+'">' +
           '<span class="mm-bubble">'+escapeHtml(say)+'</span>' +
-          '<span class="mm-puck" style="--h:'+hashHue(name)+'">'+escapeHtml(avatarInitial(name))+mood+'</span>' +
-          '<span class="mm-name">'+escapeHtml(name)+'</span>' +
-          where +
+          '<span class="mm-puck" style="--h:'+hashHue(e.authorName)+'">' +
+            escapeHtml(avatarInitial(e.authorName))+mood +
+          '</span>' +
+          '<span class="mm-name">'+escapeHtml(e.authorName)+'</span>' +
+          '<span class="mm-where"><span>'+escapeHtml(fmtWhen(e.occurredAt))+'</span></span>' +
         '</button>';
-    }).join('');
+    }
 
     pane.innerHTML =
       '<div class="mapground">' +
-        '<p class="mapcap">멤버별 최근 소식</p>' +
-        '<div class="mapmembers">'+cards+'</div>' +
+        '<p class="mapcap">장소별 채집 현황</p>' +
+        '<div class="mapclusters">' +
+          order.map(function(key){
+            var list = groups[key];
+            var head = key === NO_PLACE
+              ? '<span class="mapcluster-head"><b>장소 미기록</b> <span class="mono">'+list.length+'</span></span>'
+              : '<span class="mapcluster-head">'+icon('map-pin', 12)+'<b>'+escapeHtml(key)+'</b> <span class="mono">'+list.length+'</span></span>';
+            return '<div class="mapcluster">'+head+
+              '<div class="mapcluster-body">'+list.map(puckHtml).join('')+'</div></div>';
+          }).join('') +
+        '</div>' +
       '</div>';
 
     Array.prototype.forEach.call(pane.querySelectorAll('[data-member]'), function(btn){
