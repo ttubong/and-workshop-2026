@@ -229,9 +229,24 @@
   .card-media img{cursor:zoom-in;}
   .lightbox{
     position:fixed; inset:0; background:rgba(10,12,8,0.92); z-index:60;
-    display:flex; align-items:center; justify-content:center; padding:28px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:28px;
   }
-  .lightbox img{max-width:100%; max-height:100%; border-radius:6px; object-fit:contain;}
+  .lightbox img{
+    max-width:100%; max-height:100%; min-height:0; flex:0 1 auto;
+    border-radius:6px; object-fit:contain;
+  }
+  /* Fixed light-on-dark: this scrim is the same in either theme. */
+  .lightbox-meta{
+    flex:0 0 auto; width:100%; max-width:520px; max-height:32vh; overflow-y:auto;
+    color:#fff; text-align:center;
+  }
+  .lb-who{display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px;}
+  .lb-who .mono{color:rgba(255,255,255,.7); font-size:12px;}
+  .lb-text{
+    font-size:14px; line-height:1.6; margin:6px 0 0; color:rgba(255,255,255,.92);
+    white-space:pre-wrap; overflow-wrap:break-word;
+  }
   .lightbox-close{
     position:fixed; top:16px; right:16px; width:40px; height:40px; border-radius:50%;
     background:rgba(255,255,255,0.15); color:#fff; border:none; font-size:22px; line-height:1;
@@ -504,6 +519,7 @@
 <div id="lightboxOverlay" class="lightbox" style="display:none;">
   <button class="lightbox-close" id="lightboxClose" aria-label="닫기"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
   <img id="lightboxImg" src="" alt="채집 사진 확대보기">
+  <div class="lightbox-meta" id="lightboxMeta"></div>
 </div>
 
 <div id="deleteConfirmOverlay" class="overlay" style="display:none;">
@@ -1076,7 +1092,10 @@
       btn.addEventListener('click', function(){ openDeleteConfirm(btn.getAttribute('data-del')); });
     });
     Array.prototype.forEach.call(root.querySelectorAll('.card-media img'), function(img){
-      img.addEventListener('click', function(){ openLightbox(img.getAttribute('src')); });
+      img.addEventListener('click', function(){
+        var card = img.closest('.card');
+        openLightbox(img.getAttribute('src'), card ? card.getAttribute('data-id') : null);
+      });
     });
     Array.prototype.forEach.call(root.querySelectorAll('[data-like]'), function(btn){
       btn.addEventListener('click', function(){ toggleLike(btn.getAttribute('data-like')); });
@@ -1169,7 +1188,9 @@
     var moods = moodSummary(list);
     var photos = [];
     list.forEach(function(e){
-      (e.media || []).forEach(function(m){ if (m && m.url && m.type !== 'video') photos.push(m); });
+      (e.media || []).forEach(function(m){
+        if (m && m.url && m.type !== 'video') photos.push({ url:m.url, entryId:e.id });
+      });
     });
     var placeSeen = {}, places = [];
     list.forEach(function(e){
@@ -1195,7 +1216,7 @@
 
     var photoHtml = photos.length
       ? '<div class="profile-photos">' + photos.map(function(m){
-          return '<img src="'+escapeHtml(m.url)+'" alt="채집 사진" loading="lazy">';
+          return '<img src="'+escapeHtml(m.url)+'" alt="채집 사진" data-eid="'+escapeHtml(m.entryId)+'" loading="lazy">';
         }).join('') + '</div>'
       : '<p class="profile-none">아직 사진이 없어요.</p>';
 
@@ -1216,7 +1237,9 @@
       '<p class="profile-sec">채집한 사진</p>' + photoHtml;
 
     Array.prototype.forEach.call(body.querySelectorAll('.profile-photos img'), function(img){
-      img.addEventListener('click', function(){ openLightbox(img.getAttribute('src')); });
+      img.addEventListener('click', function(){
+        openLightbox(img.getAttribute('src'), img.getAttribute('data-eid'));
+      });
     });
 
     if (!open){ overlay.style.display = 'flex'; lockScroll(); }
@@ -1343,8 +1366,21 @@
     });
   }
 
-  function openLightbox(src){
+  function openLightbox(src, entryId){
     document.getElementById('lightboxImg').src = src;
+
+    var entry = null;
+    if (entryId){
+      for (var i = 0; i < state.entries.length; i++){
+        if (state.entries[i].id === entryId){ entry = state.entries[i]; break; }
+      }
+    }
+    document.getElementById('lightboxMeta').innerHTML = entry
+      ? '<div class="lb-who"><b>'+escapeHtml(entry.authorName)+'</b>' +
+          '<span class="mono">'+escapeHtml(fmtWhen(entry.occurredAt))+'</span></div>' +
+        (entry.text ? '<p class="lb-text">'+escapeHtml(entry.text)+'</p>' : '')
+      : '';
+
     document.getElementById('lightboxOverlay').style.display = 'flex';
     lockScroll();
   }
@@ -1353,9 +1389,11 @@
     var wasOpen = overlay.style.display !== 'none';
     overlay.style.display = 'none';
     document.getElementById('lightboxImg').src = '';
+    document.getElementById('lightboxMeta').innerHTML = '';
     if (wasOpen) unlockScroll();
   }
   document.getElementById('lightboxOverlay').addEventListener('click', closeLightbox);
+  document.getElementById('lightboxMeta').addEventListener('click', function(e){ e.stopPropagation(); });
   document.getElementById('lightboxClose').addEventListener('click', function(e){
     e.stopPropagation();
     closeLightbox();
