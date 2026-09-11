@@ -66,6 +66,14 @@
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
   .top-row{display:flex; align-items:flex-start; gap:12px;}
   .top-text{flex:1; min-width:0;}
+  .top-actions{flex:0 0 auto; display:flex; align-items:flex-start; gap:8px;}
+  /* Same circle as the profile avatar, so the two header controls read as a pair. */
+  .hdr-btn{
+    flex:0 0 auto; width:38px; height:38px; margin-top:2px; padding:0;
+    border-radius:50%; border:1px solid var(--line);
+    background:var(--paper-2); color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
   .me{
     flex:0 0 auto; background:none; border:none; padding:2px 0 0; cursor:pointer;
     display:flex; align-items:center; font-family:inherit;
@@ -88,18 +96,9 @@
   .pill.day-active-2{background:var(--moss); color:#fff; border-color:var(--moss);}
   .pill.day-active-3{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
   .memberrow{margin-top:8px;}
-  details.itinerary{
-    margin:14px 0 6px; border:1px solid var(--line); border-radius:10px; background:var(--card); overflow:hidden;
-  }
-  details.itinerary summary{
-    cursor:pointer; padding:10px 12px; font-size:13px; color:var(--ink-soft);
-    list-style:none; display:flex; align-items:center; gap:6px;
-  }
-  details.itinerary summary::-webkit-details-marker{display:none;}
-  details.itinerary summary .chev{color:var(--moss); transition:transform .15s;}
-  details.itinerary[open] summary .chev{transform:rotate(90deg);}
-  .itin-body{padding:0 14px 14px; font-size:13px; line-height:1.7; color:var(--ink);}
-  .itin-day{margin-top:10px;}
+  .itin-list{font-size:13.5px; line-height:1.7; color:var(--ink);}
+  .itin-day{margin-top:12px;}
+  .itin-day:first-child{margin-top:0;}
   .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
   .feed{margin-top:16px; display:flex; flex-direction:column; gap:12px;}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 2px 10px var(--shadow);}
@@ -269,9 +268,12 @@
           <h1 class="title">구례·하동 채집함</h1>
           <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
         </div>
-        <button type="button" class="me unset" id="meBtn">
+        <div class="top-actions">
+          <button type="button" class="hdr-btn" id="itinBtn" aria-label="워크샵 일정 보기"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></button>
+          <button type="button" class="me unset" id="meBtn">
           <span class="avatar" id="meAvatar"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-        </button>
+          </button>
+        </div>
       </div>
       <div class="stats">
         <span><b id="statCount">0</b>개 기록</span>
@@ -282,15 +284,6 @@
   </header>
 
   <div class="wrap" style="padding:0;">
-    <details class="itinerary">
-      <summary><svg class="ic chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg>워크샵 일정 훑어보기</summary>
-      <div class="itin-body">
-        <div class="itin-day"><b>D1 · 9/15</b> — 도착 · 점심 · 저녁 바베큐</div>
-        <div class="itin-day"><b>D2 · 9/16</b> — 아침 라면 · 화개장터 부식 · 점심 최참판댁 주막 · 저녁 닭구이</div>
-        <div class="itin-day"><b>D3 · 9/17</b> — 아침 근처 식당 · 밤 간식 · 점심 섬진강 재첩국 · 빵집 구매</div>
-      </div>
-    </details>
-
     <div id="banner"></div>
     <div class="feed" id="feed"></div>
   </div>
@@ -374,6 +367,25 @@
   </div>
 </div>
 
+<div id="itinOverlay" class="overlay" style="display:none;">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>워크샵 일정</h2>
+      <p class="hint">9.15 – 9.17</p>
+    </div>
+    <div class="sheet-body">
+      <div class="itin-list">
+        <div class="itin-day"><b>D1 · 9/15</b> — 도착 · 점심 · 저녁 바베큐</div>
+        <div class="itin-day"><b>D2 · 9/16</b> — 아침 라면 · 화개장터 부식 · 점심 최참판댁 주막 · 저녁 닭구이</div>
+        <div class="itin-day"><b>D3 · 9/17</b> — 아침 근처 식당 · 밤 간식 · 점심 섬진강 재첩국 · 빵집 구매</div>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="itinClose" style="flex:1;">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="filterSheetOverlay" class="overlay" style="display:none;">
   <div class="sheet">
     <div class="sheet-head">
@@ -433,7 +445,7 @@
     'plus':           '<path d="M5 12h14"/><path d="M12 5v14"/>',
     'x':              '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     'chevron-down':   '<path d="m6 9 6 6 6-6"/>',
-    'chevron-right':  '<path d="m9 18 6-6-6-6"/>',
+    'calendar':       '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
     'map-pin':        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     'heart':          '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
     'message-circle': '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
@@ -962,6 +974,20 @@
 
   document.getElementById('filterSheetOverlay').addEventListener('click', function(e){
     if (e.target === e.currentTarget) closeFilterSheet();
+  });
+
+  function openItinerary(){
+    document.getElementById('itinOverlay').style.display = 'flex';
+    lockScroll();
+  }
+  function closeItinerary(){
+    document.getElementById('itinOverlay').style.display = 'none';
+    unlockScroll();
+  }
+  document.getElementById('itinBtn').addEventListener('click', openItinerary);
+  document.getElementById('itinClose').addEventListener('click', closeItinerary);
+  document.getElementById('itinOverlay').addEventListener('click', function(e){
+    if (e.target === e.currentTarget) closeItinerary();
   });
 
   // 'write' — the name was needed before posting, so continue into the write sheet.
