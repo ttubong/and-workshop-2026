@@ -68,13 +68,9 @@
   .top-text{flex:1; min-width:0;}
   .me{
     flex:0 0 auto; background:none; border:none; padding:2px 0 0; cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit;
+    display:flex; align-items:center; font-family:inherit;
   }
   .me .avatar{width:38px; height:38px; font-size:16px;}
-  .me-label{
-    font-size:10.5px; color:var(--ink-soft); max-width:60px;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
   .me.unset .avatar{
     background:var(--paper-2); color:var(--ink-soft);
     border:1px dashed var(--line); font-weight:400;
@@ -269,13 +265,12 @@
     <div class="top-inner">
       <div class="top-row">
         <div class="top-text">
-          <p class="eyebrow">Local Vibe · Field Archive</p>
+          <p class="eyebrow">Local Vibe</p>
           <h1 class="title">구례·하동 채집함</h1>
           <p class="subtitle">9.15 – 9.17 워크샵, 우리가 눈과 손으로 채집한 것들</p>
         </div>
         <button type="button" class="me unset" id="meBtn">
           <span class="avatar" id="meAvatar"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-          <span class="me-label" id="meLabel" style="display:none;"></span>
         </button>
       </div>
       <div class="stats">
@@ -565,22 +560,17 @@
   function renderMe(){
     var btn = document.getElementById('meBtn');
     var avatar = document.getElementById('meAvatar');
-    var label = document.getElementById('meLabel');
     if (state.myName){
       btn.classList.remove('unset');
       avatar.style.setProperty('--h', hashHue(state.myName));
       avatar.textContent = avatarInitial(state.myName);
-      label.textContent = state.myName;
-      label.style.display = '';
       btn.setAttribute('aria-label', '내 이름 ' + state.myName + ' — 눌러서 바꾸기');
     } else {
-      // Before a name is set the person icon carries the meaning on its own, so the
-      // caption stays out of the header instead of labelling an already-clear icon.
+      // The avatar is the whole control: the initial and its color identify you at a
+      // glance, and the full name lives in the sheet this button opens.
       btn.classList.add('unset');
       avatar.style.removeProperty('--h');
       avatar.innerHTML = icon('user', 18);
-      label.textContent = '';
-      label.style.display = 'none';
       btn.setAttribute('aria-label', '내 이름 설정하기');
     }
   }
