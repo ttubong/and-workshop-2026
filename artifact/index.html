@@ -163,6 +163,11 @@
     display:flex; flex-direction:column; overflow:hidden;
   }
   @media (min-width:640px){ .sheet{border-radius:16px; border-bottom:1px solid var(--line); margin-bottom:24px;} }
+  /* Confirm sheets fill the phone's width like every other sheet, and only
+     narrow to a dialog once there's room for one. */
+  .sheet.confirm{max-width:100%;}
+  @media (min-width:640px){ .sheet.confirm{max-width:360px;} }
+  .sheet.confirm .sheet-actions .btn{flex:1 1 0; min-width:0;}
   .sheet-head{padding:20px 18px 0; flex:0 0 auto;}
   .sheet-head h2{font-family:'Noto Sans KR',sans-serif; font-size:19px; margin:0 0 4px;}
   .sheet-head .hint{font-size:12.5px; color:var(--ink-soft); margin:0 0 16px;}
@@ -304,7 +309,7 @@
 </div>
 
 <div id="deleteConfirmOverlay" class="overlay" style="display:none;">
-  <div class="sheet" style="max-width:360px;">
+  <div class="sheet confirm">
     <div class="sheet-head">
       <h2>정말 삭제할까요?</h2>
       <p class="hint">삭제하면 이 기록은 되돌릴 수 없어요.</p>
@@ -349,6 +354,7 @@
     assets: null,          // artifact assets namespace; null for read-only viewers
     ready: false,          // true once the db lookup has settled either way
     entries: [],
+    removedIds: {},        // entryId -> true, from a confirmed delete until the snapshot catches up
     filterDay: 'all',
     filterMember: 'all',
     filterMood: 'all',
@@ -367,6 +373,12 @@
     var h = 0;
     for (var i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
     return h % 360;
+  }
+  // Avatar shows the first character of the nickname. Array.from keeps emoji and
+  // other astral-plane characters whole instead of splitting a surrogate pair.
+  function avatarInitial(name){
+    var chars = Array.from(String(name || '').trim());
+    return chars.length ? chars[0] : '?';
   }
   function pad(n){ return n<10 ? '0'+n : ''+n; }
   function nowLocalInputValue(){
@@ -534,7 +546,7 @@
     var di = dayInfoFor(e.occurredAt);
     var dayTag = di ? '<span class="daytag '+di.cls+'">'+di.label+'</span>' : '';
     var hue = hashHue(e.authorName||'?');
-    var initial = (e.authorName||'?').trim().slice(-1);
+    var initial = avatarInitial(e.authorName);
     var media = '';
     if (e.media && e.media.length){
       media = '<div class="card-media">' + e.media.map(function(m){
@@ -602,7 +614,7 @@
         '<div class="feed" style="text-align:left; margin-top:14px;">' +
           '<div class="card sample">' +
             '<div class="card-head">' +
-              '<div class="avatar" style="--h:150">수</div>' +
+              '<div class="avatar" style="--h:150">최</div>' +
               '<div class="who"><div class="name">최수정</div><div class="meta"><span class="mono">9/16 오전 11:20</span></div></div>' +
               '<span class="daytag d2">2일 차</span>' +
             '</div>' +
@@ -808,6 +820,17 @@
     var assetIds = entry ? entry.media.map(function(m){ return m.id; }).filter(Boolean) : [];
 
     state.db.collection('entries').doc(id).delete().then(function(){
+      // Drop the card as soon as the delete is confirmed. A query subscription
+      // rides a realtime stream when one is available but otherwise falls back to
+      // a periodic refresh, so waiting on the snapshot could leave the deleted
+      // entry on screen for up to ~30s — which read as "delete needs a reload".
+      // removedIds keeps it hidden if a stale snapshot arrives in the meantime.
+      state.removedIds[id] = true;
+      state.entries = state.entries.filter(function(e){ return e.id !== id; });
+      delete state.expandedComments[id];
+      delete state.commentDrafts[id];
+      render();
+
       // Cascade: likes and comments are their own documents keyed by entryId.
       (Object.keys(state.likesByEntry[id] || {})).forEach(function(name){
         var likeId = state.likesByEntry[id][name];
@@ -1119,7 +1142,14 @@
     var db = state.db;
 
     db.collection('entries').orderBy('occurredAt', 'desc').onSnapshot(function(snap){
-      state.entries = snap.docs.map(mapEntry);
+      var present = {};
+      snap.docs.forEach(function(d){ present[d.id] = true; });
+      // Once the server stops returning an entry, its local tombstone has done
+      // its job — drop it so removedIds can't grow for the life of the page.
+      Object.keys(state.removedIds).forEach(function(id){
+        if (!present[id]) delete state.removedIds[id];
+      });
+      state.entries = snap.docs.map(mapEntry).filter(function(e){ return !state.removedIds[e.id]; });
       state.bannerMsg = null;
       render();
     }, function(err){
