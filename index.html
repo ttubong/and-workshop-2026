@@ -118,9 +118,30 @@
     cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:61;
   }
   .card-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-  .loc{font-size:12px; color:var(--river); display:flex; align-items:center; gap:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .tags-inline{display:flex; align-items:center; gap:10px; overflow:hidden; flex:1; min-width:0;}
+  .loc{font-size:12px; color:var(--river); display:flex; align-items:center; gap:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto;}
+  .moodtag{font-size:12px; color:var(--accent); display:flex; align-items:center; gap:4px; white-space:nowrap; flex:0 0 auto;}
   .del{font-size:11px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 4px; flex:0 0 auto;}
-  .del.confirm{color:var(--accent); font-weight:700;}
+  .card-actions{display:flex; align-items:center; gap:14px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line);}
+  .like-btn, .comment-toggle{
+    background:none; border:none; cursor:pointer; padding:2px 0; font-size:13px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:5px; font-family:'Noto Sans KR',sans-serif;
+  }
+  .like-btn.on{color:var(--accent); font-weight:700;}
+  .card-comments{margin-top:10px;}
+  .comment-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
+  .comment-item{font-size:13px; line-height:1.5; color:var(--ink);}
+  .comment-item b{font-family:'Noto Sans KR',sans-serif; font-weight:700; margin-right:6px;}
+  .comment-empty{font-size:12.5px; color:var(--ink-soft);}
+  .comment-add{display:flex; gap:6px;}
+  .comment-input{
+    flex:1; min-width:0; border:1px solid var(--line); background:var(--paper-2); color:var(--ink);
+    border-radius:999px; padding:7px 12px; font-size:13px; font-family:inherit; box-sizing:border-box;
+  }
+  .comment-send{
+    flex:0 0 auto; border:none; background:var(--moss); color:#fff; border-radius:999px; padding:7px 14px;
+    font-size:12.5px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
+  }
   .empty{text-align:center; padding:44px 20px; color:var(--ink-soft); border:1px dashed var(--line); border-radius:14px; font-size:14px; line-height:1.7;}
   .sample-badge{
     display:inline-block; font-family:'Noto Sans KR',sans-serif; font-size:10px; letter-spacing:.08em;
@@ -264,6 +285,11 @@
       <div class="chiprow" id="locChips"></div>
     </label>
     <label class="field">
+      <span class="lab">감흥</span>
+      <input type="text" id="fMood" placeholder="예: 설렘, 평온...">
+      <div class="chiprow" id="moodChips"></div>
+    </label>
+    <label class="field">
       <span class="lab">기록</span>
       <textarea id="fText" placeholder="무엇을 보고, 먹고, 느꼈나요?"></textarea>
     </label>
@@ -283,6 +309,17 @@
 <div id="lightboxOverlay" class="lightbox" style="display:none;">
   <button class="lightbox-close" id="lightboxClose" aria-label="닫기">×</button>
   <img id="lightboxImg" src="" alt="채집 사진 확대보기">
+</div>
+
+<div id="deleteConfirmOverlay" class="overlay" style="display:none;">
+  <div class="sheet" style="max-width:360px;">
+    <h2>정말 삭제할까요?</h2>
+    <p class="hint">삭제하면 이 기록은 되돌릴 수 없어요.</p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="deleteCancelBtn">취소</button>
+      <button class="btn primary" id="deleteConfirmBtn">삭제</button>
+    </div>
+  </div>
 </div>
 
 <!-- Supabase JS SDK (CDN, 별도 빌드 도구 불필요) -->
@@ -318,14 +355,19 @@
     {key:'09-12', label:'2일 차', short:'D2', cls:'d2'},
     {key:'09-13', label:'3일 차', short:'D3', cls:'d3'}
   ];
-  var LOC_PRESETS = ['화개장터','최참판댁','섬진강','재첩국거리','빵집','밤나무길','바베큐 자리','닭구이집','숙소'];
+  var LOC_PRESETS = ['구례','하동','화개장터','최참판댁','섬진강','재첩국거리','빵집','밤나무길','바베큐 자리','닭구이집','숙소'];
+  var MOOD_PRESETS = ['설렘','행복','평온','신남','뭉클','힐링','웃음 터짐','뿌듯함','피곤함','아쉬움','놀라움','그리움'];
 
   var state = {
     entries: [],
     filterDay: 'all',
     filterMember: 'all',
     pendingFiles: [],
-    myName: null
+    myName: null,
+    likesByEntry: {},      // entryId -> { authorName: likeRowId }
+    commentsByEntry: {},   // entryId -> [{id, authorName, text, createdAt}]
+    expandedComments: {},  // entryId -> bool
+    commentDrafts: {}      // entryId -> in-progress comment text (survives re-render)
   };
 
   function hashHue(str){
@@ -426,7 +468,34 @@
         return '<img src="'+m.url+'" alt="채집 사진" loading="lazy">';
       }).join('') + '</div>';
     }
-    var loc = e.location ? '<span class="loc">📍 '+escapeHtml(e.location)+'</span>' : '<span></span>';
+    var loc = e.location ? '<span class="loc">📍 '+escapeHtml(e.location)+'</span>' : '';
+    var moodTag = e.mood ? '<span class="moodtag">✨ '+escapeHtml(e.mood)+'</span>' : '';
+
+    var likesObj = state.likesByEntry[e.id] || {};
+    var likeNames = Object.keys(likesObj);
+    var iLiked = !!(state.myName && likesObj.hasOwnProperty(state.myName));
+    var likeBtn = '<button type="button" class="like-btn '+(iLiked?'on':'')+'" data-like="'+e.id+'">' +
+      (iLiked ? '♥' : '♡') + ' <span class="mono">'+likeNames.length+'</span></button>';
+
+    var comments = state.commentsByEntry[e.id] || [];
+    var expanded = !!state.expandedComments[e.id];
+    var commentToggle = '<button type="button" class="comment-toggle" data-ctoggle="'+e.id+'">💬 댓글 '+comments.length+'개</button>';
+    var commentBody = '';
+    if (expanded){
+      var list = comments.map(function(c){
+        return '<div class="comment-item"><b>'+escapeHtml(c.authorName)+'</b> '+escapeHtml(c.text)+'</div>';
+      }).join('') || '<div class="comment-empty">아직 댓글이 없어요.</div>';
+      var draft = state.commentDrafts[e.id] || '';
+      commentBody =
+        '<div class="card-comments">' +
+          '<div class="comment-list">'+list+'</div>' +
+          '<div class="comment-add">' +
+            '<input type="text" class="comment-input" data-cinput="'+e.id+'" placeholder="댓글 남기기..." value="'+escapeHtml(draft)+'">' +
+            '<button type="button" class="comment-send" data-csend="'+e.id+'">등록</button>' +
+          '</div>' +
+        '</div>';
+    }
+
     return (
       '<article class="card" data-id="'+e.id+'">' +
         '<div class="card-head">' +
@@ -439,7 +508,9 @@
         '</div>' +
         (e.text ? '<p class="card-text">'+escapeHtml(e.text)+'</p>' : '') +
         media +
-        '<div class="card-foot">'+loc+'<button class="del" data-del="'+e.id+'">삭제</button></div>' +
+        '<div class="card-foot"><div class="tags-inline">'+loc+moodTag+'</div><button class="del" data-del="'+e.id+'">삭제</button></div>' +
+        '<div class="card-actions">'+likeBtn+commentToggle+'</div>' +
+        commentBody +
       '</article>'
     );
   }
@@ -482,10 +553,49 @@
     }
     feed.innerHTML = filtered.map(cardHtml).join('');
     Array.prototype.forEach.call(feed.querySelectorAll('[data-del]'), function(btn){
-      btn.addEventListener('click', function(){ handleDeleteClick(btn); });
+      btn.addEventListener('click', function(){ openDeleteConfirm(btn.getAttribute('data-del')); });
     });
     Array.prototype.forEach.call(feed.querySelectorAll('.card-media img'), function(img){
       img.addEventListener('click', function(){ openLightbox(img.getAttribute('src')); });
+    });
+    Array.prototype.forEach.call(feed.querySelectorAll('[data-like]'), function(btn){
+      btn.addEventListener('click', function(){ toggleLike(btn.getAttribute('data-like')); });
+    });
+    Array.prototype.forEach.call(feed.querySelectorAll('[data-ctoggle]'), function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-ctoggle');
+        state.expandedComments[id] = !state.expandedComments[id];
+        render();
+      });
+    });
+    Array.prototype.forEach.call(feed.querySelectorAll('[data-cinput]'), function(inp){
+      inp.addEventListener('input', function(){ state.commentDrafts[inp.getAttribute('data-cinput')] = inp.value; });
+      inp.addEventListener('keydown', function(ev){
+        if (ev.key === 'Enter'){ ev.preventDefault(); sendComment(inp.getAttribute('data-cinput')); }
+      });
+    });
+    Array.prototype.forEach.call(feed.querySelectorAll('[data-csend]'), function(btn){
+      btn.addEventListener('click', function(){ sendComment(btn.getAttribute('data-csend')); });
+    });
+  }
+
+  function toggleLike(entryId){
+    if (!state.myName){ openGate(); return; }
+    var likesObj = state.likesByEntry[entryId] || {};
+    if (likesObj.hasOwnProperty(state.myName)){
+      var likeRowId = likesObj[state.myName];
+      sb.from('entry_likes').delete().eq('id', likeRowId).then(function(){});
+    } else {
+      sb.from('entry_likes').insert({ entry_id: entryId, author_name: state.myName }).then(function(){});
+    }
+  }
+
+  function sendComment(entryId){
+    if (!state.myName){ openGate(); return; }
+    var text = (state.commentDrafts[entryId] || '').trim();
+    if (!text) return;
+    sb.from('entry_comments').insert({ entry_id: entryId, author_name: state.myName, text: text }).then(function(res){
+      if (!res.error){ state.commentDrafts[entryId] = ''; }
     });
   }
 
@@ -506,25 +616,25 @@
     if (e.key === 'Escape') closeLightbox();
   });
 
-  var deleteArmed = null;
-  function handleDeleteClick(btn){
-    var id = btn.getAttribute('data-del');
-    if (deleteArmed === id){
-      deleteArmed = null;
-      sb.from('entries').delete().eq('id', id).then(function(){});
-    } else {
-      deleteArmed = id;
-      btn.textContent = '정말 삭제?';
-      btn.classList.add('confirm');
-      setTimeout(function(){
-        if (deleteArmed === id){
-          btn.textContent = '삭제';
-          btn.classList.remove('confirm');
-          deleteArmed = null;
-        }
-      }, 3000);
-    }
+  var pendingDeleteId = null;
+  function openDeleteConfirm(id){
+    pendingDeleteId = id;
+    document.getElementById('deleteConfirmOverlay').style.display = 'flex';
   }
+  function closeDeleteConfirm(){
+    pendingDeleteId = null;
+    document.getElementById('deleteConfirmOverlay').style.display = 'none';
+  }
+  document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteConfirm);
+  document.getElementById('deleteConfirmOverlay').addEventListener('click', function(e){
+    if (e.target === e.currentTarget) closeDeleteConfirm();
+  });
+  document.getElementById('deleteConfirmBtn').addEventListener('click', function(){
+    if (!pendingDeleteId) { closeDeleteConfirm(); return; }
+    var id = pendingDeleteId;
+    closeDeleteConfirm();
+    sb.from('entries').delete().eq('id', id).then(function(){});
+  });
 
   function openGate(){
     var overlay = document.getElementById('gateOverlay');
@@ -556,9 +666,11 @@
     document.getElementById('modalWho').textContent = state.myName + ' 님의 기록으로 저장돼요.';
     document.getElementById('fOccurredAt').value = nowLocalInputValue();
     document.getElementById('fLocation').value = '';
+    document.getElementById('fMood').value = '';
     document.getElementById('fText').value = '';
     state.pendingFiles = [];
     renderLocChips();
+    renderMoodChips();
     renderThumbs();
     document.getElementById('formErr').style.display = 'none';
     document.getElementById('modalOverlay').style.display = 'flex';
@@ -576,6 +688,21 @@
         e.preventDefault();
         document.getElementById('fLocation').value = b.getAttribute('data-loc');
         renderLocChips();
+      });
+    });
+  }
+
+  function renderMoodChips(){
+    var wrap = document.getElementById('moodChips');
+    var current = document.getElementById('fMood').value;
+    wrap.innerHTML = MOOD_PRESETS.map(function(p){
+      return '<button type="button" class="chip '+(current===p?'on':'')+'" data-mood="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-mood]'), function(b){
+      b.addEventListener('click', function(e){
+        e.preventDefault();
+        document.getElementById('fMood').value = b.getAttribute('data-mood');
+        renderMoodChips();
       });
     });
   }
@@ -622,6 +749,7 @@
   document.getElementById('modalSave').addEventListener('click', function(){
     var text = document.getElementById('fText').value.trim();
     var location = document.getElementById('fLocation').value.trim();
+    var mood = document.getElementById('fMood').value.trim();
     var occurredAt = document.getElementById('fOccurredAt').value;
     var errEl = document.getElementById('formErr');
 
@@ -642,13 +770,27 @@
     saveBtn.textContent = '저장 중…';
 
     uploadAllPending().then(function(out){
-      return sb.from('entries').insert({
+      var payload = {
         author_name: state.myName,
         occurred_at: occurredAt,
         location: location,
+        mood: mood,
         text: text,
         media: out.media
-      }).then(function(res){ return { res: res, failedCount: out.failedCount }; });
+      };
+      return sb.from('entries').insert(payload).then(function(res){
+        // If the Supabase migration that adds the "mood" column hasn't been run yet,
+        // don't let that break saving the entry entirely — drop mood and retry once
+        // so text/location/photos still save normally.
+        if (res.error && /mood/i.test(res.error.message || '')){
+          var fallback = {};
+          for (var k in payload){ if (k !== 'mood') fallback[k] = payload[k]; }
+          return sb.from('entries').insert(fallback).then(function(res2){
+            return { res: res2, failedCount: out.failedCount };
+          });
+        }
+        return { res: res, failedCount: out.failedCount };
+      });
     }).then(function(outcome){
       if (outcome.res && outcome.res.error) throw outcome.res.error;
       saveBtn.disabled = false;
@@ -660,7 +802,9 @@
         // creates a fresh photo-only entry rather than duplicating the text we already saved.
         document.getElementById('fText').value = '';
         document.getElementById('fLocation').value = '';
+        document.getElementById('fMood').value = '';
         renderLocChips();
+        renderMoodChips();
         state.pendingFiles = state.pendingFiles.filter(function(pf){ return pf.status === 'error'; });
         renderThumbs();
         errEl.textContent = '기록은 저장됐지만, 사진/영상 ' + outcome.failedCount + '개는 업로드에 실패했어요 (네트워크 상태를 확인하고 "채집 저장"을 다시 눌러 사진만 재시도해보세요). 이 창은 닫으셔도 돼요.';
@@ -754,36 +898,64 @@
       authorName: row.author_name || '이름없음',
       occurredAt: row.occurred_at || '',
       location: row.location || '',
+      mood: row.mood || '',
       text: row.text || '',
       media: Array.isArray(row.media) ? row.media : []
     };
   }
 
   function fetchEntries(){
-    sb.from('entries').select('*').order('occurred_at', { ascending: false }).then(function(res){
+    return sb.from('entries').select('*').order('occurred_at', { ascending: false }).then(function(res){
       if (res.error){
         document.getElementById('banner').innerHTML =
           '<div class="banner warn">데이터를 불러오지 못했어요 (' + res.error.message + '). Supabase 테이블 정책(RLS)을 확인해주세요.</div>';
         return;
       }
       state.entries = (res.data || []).map(mapRow);
-      render();
     });
   }
 
-  function subscribeEntries(){
-    fetchEntries();
-    sb.channel('entries-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, function(){
-        fetchEntries();
-      })
-      .subscribe();
+  // Likes/comments live in their own tables (entry_likes / entry_comments) —
+  // if those haven't been created yet in Supabase (see supabase-setup.sql),
+  // these simply fail silently and the app falls back to 0 likes/comments
+  // instead of breaking the whole feed.
+  function fetchLikes(){
+    return sb.from('entry_likes').select('*').then(function(res){
+      if (res.error) return;
+      var map = {};
+      (res.data || []).forEach(function(row){
+        if (!map[row.entry_id]) map[row.entry_id] = {};
+        map[row.entry_id][row.author_name] = row.id;
+      });
+      state.likesByEntry = map;
+    });
+  }
+
+  function fetchComments(){
+    return sb.from('entry_comments').select('*').order('created_at', { ascending: true }).then(function(res){
+      if (res.error) return;
+      var map = {};
+      (res.data || []).forEach(function(row){
+        if (!map[row.entry_id]) map[row.entry_id] = [];
+        map[row.entry_id].push({ id: row.id, authorName: row.author_name, text: row.text, createdAt: row.created_at });
+      });
+      state.commentsByEntry = map;
+    });
+  }
+
+  function refreshAll(){
+    return Promise.all([fetchEntries(), fetchLikes(), fetchComments()]).then(render);
   }
 
   function boot(){
     state.myName = loadMyName();
     render();
-    subscribeEntries();
+    refreshAll();
+    sb.channel('public-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, refreshAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entry_likes' }, refreshAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entry_comments' }, refreshAll)
+      .subscribe();
   }
 
   boot();

@@ -57,3 +57,66 @@ create policy "public can delete media" on storage.objects
 --   - anon public key
 -- 두 값을 복사해서 index.html의 SUPABASE_URL / SUPABASE_ANON_KEY 자리에 붙여넣으세요.
 -- ============================================================
+
+
+-- ============================================================
+-- 추가 마이그레이션 (감흥 태그 + 좋아요 + 댓글 기능)
+-- 위 스크립트를 이미 실행했다면, 아래 내용만 추가로 SQL Editor에 붙여넣고
+-- 실행(Run)하면 돼요. 여러 번 실행해도 안전합니다.
+-- ============================================================
+
+-- 6) entries 테이블에 '감흥' 태그 컬럼 추가
+alter table entries add column if not exists mood text;
+
+-- 7) 좋아요 테이블
+create table if not exists entry_likes (
+  id uuid primary key default gen_random_uuid(),
+  entry_id uuid not null references entries(id) on delete cascade,
+  author_name text not null,
+  created_at timestamptz default now(),
+  unique(entry_id, author_name)
+);
+alter table entry_likes enable row level security;
+
+drop policy if exists "public can read likes" on entry_likes;
+create policy "public can read likes" on entry_likes
+  for select using (true);
+
+drop policy if exists "public can insert likes" on entry_likes;
+create policy "public can insert likes" on entry_likes
+  for insert with check (true);
+
+drop policy if exists "public can delete likes" on entry_likes;
+create policy "public can delete likes" on entry_likes
+  for delete using (true);
+
+alter publication supabase_realtime add table entry_likes;
+
+-- 8) 댓글 테이블
+create table if not exists entry_comments (
+  id uuid primary key default gen_random_uuid(),
+  entry_id uuid not null references entries(id) on delete cascade,
+  author_name text not null,
+  text text not null,
+  created_at timestamptz default now()
+);
+alter table entry_comments enable row level security;
+
+drop policy if exists "public can read comments" on entry_comments;
+create policy "public can read comments" on entry_comments
+  for select using (true);
+
+drop policy if exists "public can insert comments" on entry_comments;
+create policy "public can insert comments" on entry_comments
+  for insert with check (true);
+
+drop policy if exists "public can delete comments" on entry_comments;
+create policy "public can delete comments" on entry_comments
+  for delete using (true);
+
+alter publication supabase_realtime add table entry_comments;
+
+-- ============================================================
+-- 끝. 이 마이그레이션을 실행한 뒤에 배포된 최신 index.html을 올리면
+-- 감흥 태그 / 좋아요 / 댓글 기능이 바로 동작해요.
+-- ============================================================
