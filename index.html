@@ -124,6 +124,12 @@
   .mapwrap.full .mapview{max-width:none; width:100%; flex:1; display:flex;}
   .mapwrap.full .mapcanvas{flex:1; height:auto; border-top:none;}
   .mapwrap.full .mapbase{height:100%; top:0; transform:none;}
+  /* Full screen: the button is the way out, so it sits where a close button is
+     looked for -- the top right, clear of the notch. */
+  .mapwrap.full .map-expand{
+    top:calc(12px + env(safe-area-inset-top, 0px)); bottom:auto;
+    right:calc(12px + env(safe-area-inset-right, 0px));
+  }
   .map-expand{
     position:absolute; right:10px; bottom:10px; z-index:2;
     width:36px; height:36px; padding:0; border-radius:50%;
@@ -138,6 +144,10 @@
     /* One finger still scrolls the page; two are ours to pinch with. */
     touch-action:pan-y;
   }
+  /* Once there is something past the edges -- zoomed in, or full screen -- one
+     finger walks the map instead of scrolling the page, the way a map app does. */
+  .mapcanvas.roam{touch-action:none; cursor:grab;}
+  .mapcanvas.roam.dragging{cursor:grabbing;}
   /* Fixed height, centred in the box: the drawing keeps its size while the box
      shrinks on scroll, so the box crops instead of the map zooming out. */
   .mapbase{
@@ -329,6 +339,8 @@
     cursor:pointer; border-bottom:1px solid var(--line);
   }
   .locresult:last-child{border-bottom:none;}
+  .locresult-new{color:var(--cta); font-weight:600;}
+  .locresult-new small{font-weight:400;}
   .locresult small{display:block; font-size:12px; color:var(--ink-soft); margin-top:2px;}
   .lochint{margin:0 0 8px; font-size:12px; color:var(--ink-soft);}
   .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-soft); cursor:pointer;}
@@ -498,14 +510,13 @@
         <input type="datetime-local" id="fOccurredAt">
       </label>
       <div class="field">
-        <label class="lab" for="fLocation">장소 (여러 개 선택 가능)</label>
+        <label class="lab" for="locSearch">장소 (여러 개 선택 가능)</label>
         <div class="loctools">
           <button type="button" class="locbtn" id="locHere"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>현재 위치</button>
           <input type="text" id="locSearch" placeholder="장소 검색" autocomplete="off">
         </div>
         <div class="locresults" id="locResults" style="display:none;"></div>
         <p class="lochint" id="locHint" style="display:none;"></p>
-        <input type="text" id="fLocation" placeholder="직접 입력은 쉼표로 구분 (예: 화개장터, 숙소 마당)">
         <div class="chiprow" id="locChips"></div>
       </div>
       <label class="field">
@@ -1299,38 +1310,55 @@
     el.textContent = msg || '';
     el.style.display = msg ? '' : 'none';
   }
-  function showLocResults(list){
+  // Whatever was typed can always be registered as it stands, so a place the
+  // search does not know is still one tap away instead of needing its own field.
+  function showLocResults(list, q){
     var box = document.getElementById('locResults');
-    if (!list || !list.length){ box.innerHTML = ''; box.style.display = 'none'; return; }
-    box.innerHTML = list.map(function(r, i){
+    var typed = String(q || '').trim();
+    var rows = (list || []).map(function(r, i){
       return '<button type="button" class="locresult" data-i="'+i+'">' +
         escapeHtml(r.name) +
         (r.detail ? '<small>'+escapeHtml(r.detail)+'</small>' : '') +
       '</button>';
-    }).join('');
+    });
+    if (typed){
+      rows.push('<button type="button" class="locresult locresult-new" data-new="1">' +
+        '‘'+escapeHtml(typed)+'’ 등록<small>찾는 장소가 없으면 이대로 등록해요</small></button>');
+    }
+    if (!rows.length){ box.innerHTML = ''; box.style.display = 'none'; return; }
+    box.innerHTML = rows.join('');
     box.style.display = '';
+    function clearSearch(){
+      document.getElementById('locSearch').value = '';
+      showLocResults(null);
+    }
     Array.prototype.forEach.call(box.querySelectorAll('[data-i]'), function(btn){
       btn.addEventListener('click', function(){
         var r = list[parseInt(btn.getAttribute('data-i'), 10)];
         applyFoundPlace(r.name, r.lat, r.lng, '검색한 위치로 지도에 표시됩니다.');
-        document.getElementById('locSearch').value = '';
-        showLocResults(null);
+        clearSearch();
       });
+    });
+    var mk = box.querySelector('[data-new]');
+    if (mk) mk.addEventListener('click', function(){
+      applyFoundPlace(typed, null, null, '직접 등록한 장소예요.');
+      clearSearch();
     });
   }
 
   // The text stays the author's to edit; the coordinates ride along separately,
   // so renaming the place later does not throw the position away.
   function applyFoundPlace(name, lat, lng, hint){
-    state.pendingLat = lat;
-    state.pendingLng = lng;
-    if (name){
-      var field = document.getElementById('fLocation');
-      var tags = splitTags(field.value);
-      if (tags.indexOf(name) === -1) tags.push(name);
-      field.value = tags.join(', ');
+    // A registered name carries no coordinates; keep whatever the map already had.
+    if (lat != null && lng != null){
+      state.pendingLat = lat;
+      state.pendingLng = lng;
     }
-    setLocHint(hint + (name ? '' : ' 장소 이름은 직접 적어주세요.'));
+    if (name && state.selectedLocs.indexOf(name) === -1){
+      state.selectedLocs.push(name);
+      renderLocChips();
+    }
+    setLocHint(hint + (name ? '' : ' 장소 이름은 검색해서 등록해주세요.'));
   }
 
   function renderMap(){
@@ -1483,7 +1511,12 @@
     mapZoom.s = Math.min(4, Math.max(1, mapZoom.s));
     mapZoom.x = Math.min(0, Math.max(430 - 430 * mapZoom.s, mapZoom.x));
     mapZoom.y = Math.min(0, Math.max(390 - 390 * mapZoom.s, mapZoom.y));
+    var canvas = document.getElementById('mapCanvas');
+    if (canvas) canvas.classList.toggle('roam', canRoamMap());
   }
+  // Panning with one finger costs the page its scroll under the map, so it is
+  // only taken when the map has somewhere to go: zoomed in, or full screen.
+  function canRoamMap(){ return mapFull || mapZoom.s > 1; }
   // Screen point -> the SVG's own units, accounting for how "slice" fits and
   // centres the drawing in the box.
   function mapUserPoint(clientX, clientY){
@@ -1521,6 +1554,8 @@
     wrap.style.display = mapFull ? 'flex' : 'block';
     btn.innerHTML = icon(mapFull ? 'x' : 'maximize', 18);
     btn.setAttribute('aria-label', mapFull ? '지도 닫기' : '지도 크게 보기');
+    clampMapZoom();
+    applyMapZoom();
     if (mapFull) lockScroll(); else unlockScroll();
   }
 
@@ -1536,15 +1571,37 @@
       if (e.key === 'Escape' && mapFull) setMapFull(false);
     });
 
+    var drag = null, swallowClick = false;
+    canvas.addEventListener('click', function(e){
+      if (!swallowClick) return;
+      swallowClick = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }, true);
     canvas.addEventListener('pointerdown', function(e){
-      if (e.pointerType === 'mouse') return;
       pts[e.pointerId] = { x:e.clientX, y:e.clientY };
+      if (Object.keys(pts).length === 1 && canRoamMap()){
+        drag = { id:e.pointerId, x:e.clientX, y:e.clientY };
+        canvas.classList.add('dragging');
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      }
     });
     canvas.addEventListener('pointermove', function(e){
       if (!pts[e.pointerId]) return;
+      var from = pts[e.pointerId];
       pts[e.pointerId] = { x:e.clientX, y:e.clientY };
       var ids = Object.keys(pts);
-      if (ids.length < 2) return;
+      if (ids.length < 2){
+        if (!drag || drag.id !== e.pointerId) return;
+        e.preventDefault();
+        if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 6) drag.moved = true;
+        var to = mapUserPoint(e.clientX, e.clientY), at = mapUserPoint(from.x, from.y);
+        mapZoom.x += to.x - at.x;
+        mapZoom.y += to.y - at.y;
+        clampMapZoom();
+        applyMapZoom();
+        return;
+      }
       e.preventDefault();
       var a = pts[ids[0]], b = pts[ids[1]];
       var dist = Math.hypot(a.x - b.x, a.y - b.y);
@@ -1563,7 +1620,19 @@
     });
     function lift(e){
       delete pts[e.pointerId];
+      if (drag && drag.id === e.pointerId){
+        // A drag that walked the map is not a tap on the pin it started from.
+        if (drag.moved) swallowClick = true;
+        drag = null;
+        canvas.classList.remove('dragging');
+      }
       if (Object.keys(pts).length < 2) last = null;
+      // A pinch that ends with one finger still down hands over to a drag.
+      if (Object.keys(pts).length === 1 && canRoamMap()){
+        var id = Object.keys(pts)[0];
+        drag = { id:(id.match(/^-?\d+$/) ? Number(id) : id), x:pts[id].x, y:pts[id].y };
+        canvas.classList.add('dragging');
+      }
     }
     canvas.addEventListener('pointerup', lift);
     canvas.addEventListener('pointercancel', lift);
@@ -1577,6 +1646,7 @@
 
     canvas.addEventListener('dblclick', function(){
       mapZoom = { s:1, x:0, y:0 };
+      clampMapZoom();
       applyMapZoom();
     });
   })();
@@ -1862,7 +1932,6 @@
     if (!state.myName){ openGate(); return; }
     document.getElementById('modalWho').textContent = state.myName + ' 님의 기록으로 저장돼요.';
     document.getElementById('fOccurredAt').value = nowLocalInputValue();
-    document.getElementById('fLocation').value = '';
     document.getElementById('fMood').value = '';
     document.getElementById('fText').value = '';
     state.pendingFiles = [];
@@ -1890,7 +1959,8 @@
 
   function renderLocChips(){
     var wrap = document.getElementById('locChips');
-    wrap.innerHTML = LOC_PRESETS.map(function(p){
+    var added = state.selectedLocs.filter(function(p){ return LOC_PRESETS.indexOf(p) === -1; });
+    wrap.innerHTML = LOC_PRESETS.concat(added).map(function(p){
       var on = state.selectedLocs.indexOf(p) !== -1;
       return '<button type="button" class="chip '+(on?'on':'')+'" data-loc="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
     }).join('');
@@ -1993,12 +2063,14 @@
     searchBox.addEventListener('input', function(){
       var q = searchBox.value.trim();
       clearTimeout(searchTimer);
-      if (q.length < 2){ showLocResults(null); return; }
+      if (!q){ showLocResults(null); return; }
+      // The register row is there from the first letter; matches join it later.
+      showLocResults(null, q);
+      if (q.length < 2) return;
       searchTimer = setTimeout(function(){
         searchPlaces(q).then(function(list){
           if (searchBox.value.trim() !== q) return;
-          showLocResults(list);
-          if (!list || !list.length) setLocHint('찾은 장소가 없어요. 직접 적어주세요.');
+          showLocResults(list, q);
         });
       }, 500);
     });
@@ -2012,7 +2084,7 @@
 
   document.getElementById('modalSave').addEventListener('click', function(){
     var text = document.getElementById('fText').value.trim();
-    var location = collectTags(document.getElementById('fLocation').value, state.selectedLocs);
+    var location = collectTags('', state.selectedLocs);
     var mood = collectTags(document.getElementById('fMood').value, state.selectedMoods);
     var occurredAt = document.getElementById('fOccurredAt').value;
     var errEl = document.getElementById('formErr');
@@ -2075,7 +2147,6 @@
         // instead of silently dropping them like before. Clear the text fields so a retry
         // creates a fresh photo-only entry rather than duplicating the text we already saved.
         document.getElementById('fText').value = '';
-        document.getElementById('fLocation').value = '';
         document.getElementById('fMood').value = '';
         state.selectedLocs = [];
         state.selectedMoods = [];
