@@ -113,105 +113,52 @@
   .itin-day:first-child{margin-top:0;}
   .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
   .feed{margin-top:16px; display:flex; flex-direction:column; gap:12px;}
-  /* View switch, sitting just under the header's rule */
-  .segmented{
-    display:flex; gap:2px; padding:3px; margin:14px 0 0;
-    background:var(--paper-2); border:1px solid var(--line); border-radius:999px;
+  /* Map. Artifacts cannot load map tiles, so the valley is drawn by hand; the
+     pins are not — each sits at its place's real latitude and longitude. */
+  .mapwrap{
+    position:sticky; top:52px; z-index:10;
+    background:var(--paper); border-bottom:1px solid var(--line);
   }
-  .seg{
-    flex:1 1 0; min-width:0; border:none; background:none; color:var(--ink-soft);
-    font-family:'Noto Sans KR',sans-serif; font-size:14px; font-weight:500;
-    padding:7px 12px; border-radius:999px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:5px;
-    transition:background .15s, color .15s;
+  .mapview{max-width:640px; margin:0 auto; padding:10px 20px 12px;}
+  .mapcanvas{
+    position:relative; height:260px; border-radius:14px; overflow:hidden;
+    background:var(--paper-2); border:1px solid var(--line);
   }
-  .seg.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 3px var(--shadow);}
-  /* Map view: each member's latest message and mood, on a map-like ground.
-     The ground is decorative — entries carry place names, not coordinates. */
-  .mapclusters{
-    margin-top:16px;
-    display:flex; flex-wrap:wrap; justify-content:center;
-    align-items:flex-start; gap:14px;
+  .mapbase{display:block; width:100%; height:100%;}
+  .map-land{fill:color-mix(in srgb, var(--moss) 12%, transparent);}
+  .map-ridge{
+    fill:none; stroke:color-mix(in srgb, var(--moss) 45%, transparent);
+    stroke-width:2; stroke-linejoin:round; stroke-linecap:round;
   }
-  /* One place per cluster. A dashed tint holds its records together, and the gap
-     inside a cluster stays tighter than the gap between clusters. */
-  .mapcluster{
-    flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:9px;
-    padding:14px 14px 18px; border-radius:18px;
-    background:color-mix(in srgb, var(--card) 55%, transparent);
-    border:1px dashed var(--line);
+  .map-river{fill:none; stroke:var(--river); stroke-width:4; stroke-linecap:round; opacity:.5;}
+  .map-label{fill:var(--ink-soft); font-size:11px; font-family:'Noto Sans KR',sans-serif;}
+  .map-pin{cursor:pointer;}
+  .map-pin .pin-ring{fill:var(--card); stroke:var(--line); stroke-width:1.5;}
+  .map-pin.on .pin-ring{stroke:var(--cta); stroke-width:3;}
+  .map-pin .pin-initial{
+    fill:var(--ink); font-size:13px; font-weight:700; text-anchor:middle;
+    font-family:'Noto Sans KR',sans-serif;
   }
-  .mapcluster-head{
-    display:flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-soft);
+  .map-pin .pin-name{
+    fill:var(--ink); font-size:10px; font-weight:700; text-anchor:middle;
+    font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
+    stroke:var(--paper); stroke-width:3px; stroke-linejoin:round;
   }
-  .mapcluster-head b{color:var(--ink); font-weight:700;}
-  .mapcluster-body{
-    display:flex; flex-wrap:wrap; justify-content:center; gap:13px 2px; max-width:330px;
+  .map-pin .pin-badge{fill:var(--cta);}
+  .map-pin .pin-count{
+    fill:var(--cta-ink); font-size:9px; font-weight:700; text-anchor:middle;
+    font-family:'Noto Sans KR',sans-serif;
   }
-  .mm{
-    flex:0 0 auto; width:98px; padding:0; border:none; background:none; cursor:pointer;
-    font-family:inherit; color:var(--ink); position:relative;
-    display:flex; flex-direction:column; align-items:center; gap:7px;
+  .mapnote{
+    position:absolute; left:10px; bottom:10px; margin:0;
+    font-size:12px; color:var(--ink-soft);
+    background:color-mix(in srgb, var(--paper) 82%, transparent);
+    border-radius:999px; padding:3px 10px;
   }
-  /* Whichever one you are reaching for comes to the front, so an overlap never
-     hides the message you are trying to read. */
-  .mm:hover, .mm:focus-visible{z-index:3;}
-  /* The slot keeps a two-line height and the bubble sits at its bottom, so a
-     one-line message gets a one-line bubble while the avatars below still line
-     up across a cluster. */
-  .mm-top{
-    width:100%; height:48px;
-    display:flex; align-items:flex-end; justify-content:center;
+  .mapempty{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:14px; color:var(--ink-soft); text-align:center; padding:0 24px;
   }
-  .mm-bubble{
-    position:relative; max-width:100%; margin-bottom:2px;
-    background:var(--card); border:1px solid var(--line); border-radius:12px;
-    padding:6px 9px; font-size:12px; line-height:1.4; text-align:center;
-    box-shadow:0 2px 8px var(--shadow);
-    overflow:hidden;
-  }
-  /* The clamp lives on an inner span, not on the bubble: the bubble is a flex
-     item, and a flex item's display is blockified, which turns -webkit-box into
-     a plain block and drops the line limit (and its ellipsis) entirely. */
-  .mm-say{
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-    overflow:hidden; overflow-wrap:break-word;
-  }
-  .mm-say .ic{display:inline-block; vertical-align:-2px; color:var(--ink-soft);}
-  /* Gap only when a message follows. :only-child would not do — it ignores text
-     nodes, so it matched even when the bubble had a message beside the icon. */
-  .mm-say .ic:not(:last-child){margin-right:3px;}
-  .mm-bubble:after{
-    content:""; position:absolute; left:50%; bottom:-5px; width:8px; height:8px;
-    transform:translateX(-50%) rotate(45deg); background:var(--card);
-    border-right:1px solid var(--line); border-bottom:1px solid var(--line);
-  }
-  .mm-puck{
-    position:relative; width:48px; height:48px; border-radius:50%;
-    background:hsl(var(--h,140) 40% var(--avatar-l));
-    color:hsl(var(--h,140) 55% var(--avatar-l2));
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:19px;
-    box-shadow:0 0 0 3px var(--card), 0 3px 10px var(--shadow);
-  }
-  /* A record with a photo shows it in place of the initial. Videos have no
-     still to use, so those keep the initial. */
-  .mm-puck.has-photo{background:var(--paper-2);}
-  .mm-photo{width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;}
-  .mm-mood{
-    position:absolute; right:-5px; bottom:-3px; font-size:15px; line-height:1;
-    background:var(--card); border-radius:50%; padding:2px;
-    box-shadow:0 1px 4px var(--shadow);
-  }
-  .mm-name{
-    font-size:14px; font-weight:700; max-width:100%;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
-  .mm-where{
-    font-size:12px; color:var(--ink-soft); max-width:100%;
-    display:flex; align-items:center; gap:3px; min-width:0;
-  }
-  .mm-where span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 2px 10px var(--shadow);}
   .card-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .avatar{
@@ -449,15 +396,26 @@
   <div class="filterbar" id="filterBar"></div>
 </div>
 
+<div class="mapwrap" id="mapWrap" style="display:none;">
+  <div class="mapview">
+    <div class="mapcanvas" id="mapCanvas">
+      <svg class="mapbase" viewBox="0 0 430 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="구례·하동 채집 지도">
+        <path class="map-land" d="M22 62 C64 22 132 10 202 26 C272 10 344 24 408 58 C418 104 402 152 378 186 C298 196 196 192 118 186 C58 170 26 122 22 62 Z"/>
+        <path class="map-ridge" d="M150 44 L184 20 L212 38 L244 14 L272 34 L304 16 L338 40 L372 22 L402 46"/>
+        <path class="map-river" d="M36 26 C82 46 142 54 200 50 C230 48 248 48 256 58 C268 94 284 128 322 160 C352 182 380 190 412 194"/>
+        <text class="map-label" x="286" y="13">지리산</text>
+        <text class="map-label" x="132" y="74">섬진강</text>
+        <g id="mapPins"></g>
+      </svg>
+      <p class="mapnote" id="mapNote"></p>
+    </div>
+  </div>
+</div>
+
 <div id="app" class="wrap" style="display:none;">
   <div class="wrap" style="padding:0;">
-    <div class="segmented" role="tablist" aria-label="보기 전환">
-      <button type="button" class="seg on" data-view="list" role="tab" aria-selected="true">리스트뷰</button>
-      <button type="button" class="seg" data-view="map" role="tab" aria-selected="false">맵뷰</button>
-    </div>
     <div id="banner"></div>
     <div class="feed" id="feed"></div>
-    <div id="mapPane" style="display:none;"></div>
   </div>
 </div>
 
@@ -621,6 +579,7 @@
 
   document.getElementById('topBar').style.display = 'block';
   document.getElementById('topInner').style.display = 'block';
+  document.getElementById('mapWrap').style.display = 'block';
   document.getElementById('app').style.display = 'block';
   document.getElementById('fabAdd').style.display = 'flex';
 
@@ -663,7 +622,6 @@
   var state = {
     entries: [],
     removedIds: {},        // entryId -> true, from a confirmed delete until the refetch catches up
-    view: 'list',          // 'list' | 'map'
     detailId: null,        // record shown in the detail sheet, null when closed
     profileName: null,     // person shown in the profile sheet, null when closed
     filterDay: 'all',
@@ -768,13 +726,13 @@
     return list;
   }
 
-  function filteredEntries(){
+  function filteredEntries(skipLoc){
     return state.entries.filter(function(e){
       if (state.filterDay !== 'all'){
         var di = dayInfoFor(e.occurredAt);
         if (!di || di.key !== state.filterDay) return false;
       }
-      if (state.filterLoc !== 'all' && splitTags(e.location).indexOf(state.filterLoc) === -1) return false;
+      if (!skipLoc && state.filterLoc !== 'all' && splitTags(e.location).indexOf(state.filterLoc) === -1) return false;
       if (state.filterMember !== 'all' && e.authorName !== state.filterMember) return false;
       if (state.filterMood !== 'all' && splitTags(e.mood).indexOf(state.filterMood) === -1) return false;
       return true;
@@ -797,19 +755,6 @@
     return state.filterMood === 'all' ? '감흥' : state.filterMood;
   }
 
-  function renderSegmented(){
-    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
-      var on = btn.getAttribute('data-view') === state.view;
-      btn.classList.toggle('on', on);
-      btn.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
-  }
-  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
-    btn.addEventListener('click', function(){
-      state.view = btn.getAttribute('data-view');
-      render();
-    });
-  });
 
   function renderMe(){
     var btn = document.getElementById('meBtn');
@@ -1006,86 +951,6 @@
     );
   }
 
-  function renderMapPane(){
-    var pane = document.getElementById('mapPane');
-    var entries = filteredEntries();
-
-    if (!entries.length){
-      pane.innerHTML = '<div class="empty" style="margin-top:16px;">' +
-        (state.entries.length ? '이 필터에는 아직 기록이 없어요.'
-                              : '아직 기록이 없어요.<br>첫 기록을 남기면 여기에 나타납니다.') +
-        '</div>';
-      return;
-    }
-
-    // A record can carry several places; the first one decides its cluster.
-    // Records with no place gather in their own group at the end.
-    var NO_PLACE = '__noplace__';
-    var groups = {}, order = [];
-    entries.forEach(function(e){
-      var key = splitTags(e.location)[0] || NO_PLACE;
-      if (!groups[key]){ groups[key] = []; order.push(key); }
-      groups[key].push(e);
-    });
-    order.sort(function(a, b){
-      if (a === NO_PLACE) return 1;
-      if (b === NO_PLACE) return -1;
-      return groups[b].length - groups[a].length || a.localeCompare(b, 'ko');
-    });
-
-    function puckHtml(e){
-      var moods = splitTags(e.mood);
-      var photos = (e.media || []).length;
-      // A photo gets an icon in front of the message. With a photo and no message
-      // the icon stands alone — it already says what is there.
-      var say = e.text || (photos ? '' : '기록을 남겼어요');
-      var sayHtml = (photos ? icon('image', 12) : '') +
-        (say ? '<span class="mm-text">' + escapeHtml(say) + '</span>' : '');
-      var mood = moods.length ? '<span class="mm-mood">'+moodEmoji(moods[0])+'</span>' : '';
-      var shot = null;
-      (e.media || []).forEach(function(m){
-        if (!shot && m && m.url && m.type !== 'video') shot = m;
-      });
-      // The name sits right below, so the image carries no alt of its own.
-      var face = shot
-        ? '<img class="mm-photo" src="'+escapeHtml(shot.url)+'" alt="" loading="lazy">'
-        : escapeHtml(avatarInitial(e.authorName));
-      // Offsets come from the record's id, so they hold still across renders
-      // instead of reshuffling every time the feed updates.
-      var dx = (hashInt(e.id + 'x') % 19) - 9;
-      var dy = (hashInt(e.id + 'y') % 19) - 9;
-      var rot = ((hashInt(e.id + 'r') % 61) - 30) / 10;
-      var nudge = 'transform:translate('+dx+'px,'+dy+'px) rotate('+rot+'deg);';
-      return '<button type="button" class="mm" style="'+nudge+'" data-open="'+escapeHtml(e.id)+'">' +
-          '<span class="mm-top"><span class="mm-bubble"><span class="mm-say">'+sayHtml+'</span></span></span>' +
-          '<span class="mm-puck'+(shot ? ' has-photo' : '')+'" style="--h:'+hashHue(e.authorName)+'">' +
-            face+mood +
-          '</span>' +
-          '<span class="mm-name">'+escapeHtml(e.authorName)+'</span>' +
-          '<span class="mm-where"><span>'+escapeHtml(fmtWhen(e.occurredAt))+'</span></span>' +
-        '</button>';
-    }
-
-    pane.innerHTML =
-      '<div class="mapclusters">' +
-          order.map(function(key){
-            var list = groups[key];
-            var head = key === NO_PLACE
-              ? '<span class="mapcluster-head"><b>장소 미기록</b> <span class="mono">'+list.length+'</span></span>'
-              : '<span class="mapcluster-head">'+icon('map-pin', 12)+'<b>'+escapeHtml(key)+'</b> <span class="mono">'+list.length+'</span></span>';
-            return '<div class="mapcluster">'+head+
-              '<div class="mapcluster-body">'+list.map(puckHtml).join('')+'</div></div>';
-          }).join('') +
-      '</div>';
-
-    Array.prototype.forEach.call(pane.querySelectorAll('[data-open]'), function(btn){
-      btn.addEventListener('click', function(){
-        state.detailId = btn.getAttribute('data-open');
-        render();
-      });
-    });
-  }
-
   // Cards render in two places now — the feed and the detail sheet — so their
   // controls are wired from one place against whichever container holds them.
   function bindCardHandlers(root){
@@ -1264,18 +1129,121 @@
     render();
   }
 
+  // The window the map draws, and where each place really is. Pin positions are
+  // computed from these, so a pin lands where the place is rather than where a
+  // layout happens to put it.
+  var MAP_BOX = { west:127.30, east:127.90, north:35.25, south:35.02, w:430, h:200 };
+  var PLACE_COORDS = {
+    '구례':       [35.202, 127.463],
+    '화개장터':   [35.196, 127.647],
+    '쌍계사':     [35.235, 127.653],
+    '섬진강':     [35.130, 127.620],
+    '최참판댁':   [35.086, 127.685],
+    '악양':       [35.093, 127.702],
+    '하동':       [35.067, 127.751],
+    '재첩국거리': [35.062, 127.759]
+  };
+  function placePoint(name){
+    var c = PLACE_COORDS[name];
+    if (!c) return null;
+    return {
+      x: (c[1] - MAP_BOX.west) / (MAP_BOX.east - MAP_BOX.west) * MAP_BOX.w,
+      y: (MAP_BOX.north - c[0]) / (MAP_BOX.north - MAP_BOX.south) * MAP_BOX.h
+    };
+  }
+
+  function renderMap(){
+    var pins = document.getElementById('mapPins');
+    var note = document.getElementById('mapNote');
+    if (!pins) return;
+
+    // Every filter except place shapes the map, so choosing a place highlights
+    // one pin instead of hiding the rest.
+    var forMap = filteredEntries(true);
+    var groups = {}, order = [], offRecords = 0, offNames = {};
+    forMap.forEach(function(e){
+      var name = splitTags(e.location)[0] || '';
+      if (placePoint(name)){
+        if (!groups[name]){ groups[name] = []; order.push(name); }
+        groups[name].push(e);
+      } else {
+        offRecords++;
+        if (name) offNames[name] = true;
+      }
+    });
+
+    pins.innerHTML = order.map(function(name, i){
+      var p = placePoint(name);
+      var list = groups[name];
+      var shot = null;
+      list.forEach(function(e){
+        (e.media || []).forEach(function(m){
+          if (!shot && m && m.url && m.type !== 'video') shot = m;
+        });
+      });
+      var cid = 'pinclip' + i;
+      var face = shot
+        ? '<clipPath id="'+cid+'"><circle r="13"/></clipPath>' +
+          '<image href="'+escapeHtml(shot.url)+'" x="-13" y="-13" width="26" height="26" ' +
+            'preserveAspectRatio="xMidYMid slice" clip-path="url(#'+cid+')"/>'
+        : '<text class="pin-initial" y="4.5">'+escapeHtml(name.slice(0,1))+'</text>';
+      var badge = list.length > 1
+        ? '<circle class="pin-badge" cx="11" cy="-11" r="7.5"/>' +
+          '<text class="pin-count" x="11" y="-8">'+list.length+'</text>'
+        : '';
+      var on = state.filterLoc === name ? ' on' : '';
+      return '<g class="map-pin'+on+'" data-place="'+escapeHtml(name)+'" ' +
+          'transform="translate('+p.x.toFixed(1)+','+p.y.toFixed(1)+')" ' +
+          'role="button" tabindex="0" aria-label="'+escapeHtml(name)+' 기록 '+list.length+'개">' +
+          '<circle class="pin-ring" r="15"/>' + face + badge +
+          '<text class="pin-name" y="29">'+escapeHtml(name)+'</text>' +
+        '</g>';
+    }).join('');
+
+    var offPlaceCount = Object.keys(offNames).length;
+    if (offRecords){
+      note.textContent = '지도 밖 기록 ' + offRecords + '개' +
+        (offPlaceCount ? ' · ' + offPlaceCount + '곳' : '');
+      note.style.display = '';
+    } else {
+      note.textContent = '';
+      note.style.display = 'none';
+    }
+
+    Array.prototype.forEach.call(pins.querySelectorAll('[data-place]'), function(g){
+      function pick(){
+        var name = g.getAttribute('data-place');
+        // Tapping the pin that is already chosen clears the filter again.
+        state.filterLoc = (state.filterLoc === name) ? 'all' : name;
+        render();
+      }
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', function(ev){
+        if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); pick(); }
+      });
+    });
+  }
+
+  // The map keeps the top of the screen and gives up height as the feed comes up.
+  var MAP_MAX = 260, MAP_MIN = 104, mapTick = false;
+  function sizeMap(){
+    mapTick = false;
+    var el = document.getElementById('mapCanvas');
+    if (el) el.style.height = Math.max(MAP_MIN, MAP_MAX - window.scrollY) + 'px';
+  }
+  window.addEventListener('scroll', function(){
+    if (!mapTick){ mapTick = true; requestAnimationFrame(sizeMap); }
+  }, { passive:true });
+  sizeMap();
+
   function render(){
     renderMe();
-    renderSegmented();
     renderFilterButtons();
     renderBanner();
     renderDetail();
     renderProfile();
 
-    var isMap = state.view === 'map';
-    document.getElementById('feed').style.display = isMap ? 'none' : '';
-    document.getElementById('mapPane').style.display = isMap ? '' : 'none';
-    if (isMap){ renderMapPane(); return; }
+    renderMap();
 
     var filtered = filteredEntries();
     var feed = document.getElementById('feed');
