@@ -296,11 +296,16 @@
     display:flex; flex-direction:column; overflow:hidden;
   }
   @media (min-width:640px){ .sheet{border-radius:16px; border-bottom:1px solid var(--line); margin-bottom:24px;} }
-  /* Confirm sheets fill the phone's width like every other sheet, and only
-     narrow to a dialog once there's room for one. */
   .sheet.confirm{max-width:100%;}
   @media (min-width:640px){ .sheet.confirm{max-width:360px;} }
   .sheet.confirm .sheet-actions .btn{flex:1 1 0; min-width:0;}
+  /* The delete confirm asks one short question, so it is a dialog rather than a
+     sheet: centred and free of the screen's bottom edge on phones too. */
+  .overlay.center{align-items:center; padding:20px;}
+  .overlay.center .sheet.confirm{
+    max-width:360px; border-radius:16px; border-bottom:1px solid var(--line);
+  }
+  .overlay.center .sheet.confirm .sheet-actions{padding-bottom:12px;}
   .sheet-head{padding:20px 18px 0; flex:0 0 auto;}
   .sheet-head h2{font-family:'Noto Sans KR',sans-serif; font-size:19px; margin:0 0 4px;}
   .sheet-head .hint{font-size:14px; color:var(--ink-soft); margin:0 0 16px;}
@@ -561,7 +566,7 @@
   <div class="lightbox-meta" id="lightboxMeta"></div>
 </div>
 
-<div id="deleteConfirmOverlay" class="overlay" style="display:none;">
+<div id="deleteConfirmOverlay" class="overlay center" style="display:none;">
   <div class="sheet confirm">
     <div class="sheet-head">
       <h2>정말 삭제할까요?</h2>
