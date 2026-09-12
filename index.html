@@ -1503,10 +1503,14 @@
     gateNext = next || 'write';
     gateAfter = typeof after === 'function' ? after : null;
     var editing = !!state.myName;
-    document.getElementById('gateTitle').textContent = editing ? '이름 바꾸기' : '이름을 알려주세요';
-    document.getElementById('gateHint').textContent = editing
-      ? '바꾼 이름은 앞으로 남길 기록에 표시돼요. 이미 남긴 기록의 작성자 이름은 그대로예요.'
-      : '기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.';
+    document.getElementById('gateTitle').textContent = editing ? '이름 변경' : '이름을 알려주세요';
+    var hint = document.getElementById('gateHint');
+    if (editing){
+      // Fixed copy, so innerHTML here only carries the line break.
+      hint.innerHTML = '작성자 이름을 변경합니다.<br>이미 남긴 기록의 이름은 유지돼요.';
+    } else {
+      hint.textContent = '기록을 남길 때마다 작성자로 표시돼요. 이 브라우저에 저장되며 언제든 바꿀 수 있어요.';
+    }
     document.getElementById('gateSave').textContent = editing ? '저장' : '시작하기';
     document.getElementById('gateNameInput').value = state.myName || '';
     document.getElementById('gateOverlay').style.display = 'flex';
