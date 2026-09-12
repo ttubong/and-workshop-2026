@@ -311,6 +311,26 @@
   .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
   .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:14px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
   .chip.on{background:var(--moss); border-color:var(--moss); color:#fff;}
+  .loctools{display:flex; gap:6px; margin-top:8px;}
+  .locbtn{
+    flex:0 0 auto; display:flex; align-items:center; gap:5px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink);
+    border-radius:9px; padding:9px 11px; font-size:14px; font-family:inherit;
+    cursor:pointer; white-space:nowrap;
+  }
+  .locbtn:disabled{opacity:.55; cursor:default;}
+  .locresults{
+    margin-top:6px; border:1px solid var(--line); border-radius:9px;
+    background:var(--card); overflow:hidden;
+  }
+  .locresult{
+    display:block; width:100%; text-align:left; border:none; background:none;
+    padding:9px 11px; font-family:inherit; font-size:14px; color:var(--ink);
+    cursor:pointer; border-bottom:1px solid var(--line);
+  }
+  .locresult:last-child{border-bottom:none;}
+  .locresult small{display:block; font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .lochint{margin:6px 0 0; font-size:12px; color:var(--ink-soft);}
   .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-soft); cursor:pointer;}
   .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
   .thumb{width:64px; height:64px; border-radius:8px; overflow:hidden; position:relative; background:var(--paper-2); border:1px solid var(--line);}
@@ -482,6 +502,12 @@
         <input type="text" id="fLocation" placeholder="직접 입력은 쉼표로 구분 (예: 화개장터, 숙소 마당)">
         <div class="chiprow" id="locChips"></div>
       </label>
+      <div class="loctools">
+        <button type="button" class="locbtn" id="locHere">현재 위치</button>
+        <input type="text" id="locSearch" placeholder="장소 검색" autocomplete="off">
+      </div>
+      <div class="locresults" id="locResults" style="display:none;"></div>
+      <p class="lochint" id="locHint" style="display:none;"></p>
       <label class="field">
         <span class="lab">감흥 (여러 개 선택 가능)</span>
         <input type="text" id="fMood" placeholder="직접 입력은 쉼표로 구분 (예: 설렘, 평온)">
@@ -661,7 +687,9 @@
     commentsByEntry: {},   // entryId -> [{id, authorName, text, createdAt}]
     expandedComments: {},  // entryId -> bool
     commentDrafts: {},     // entryId -> in-progress comment text (survives re-render)
-    selectedLocs: [],      // write-modal: toggled location chip values
+    selectedLocs: [],
+    pendingLat: null,
+    pendingLng: null,      // write-modal: toggled location chip values
     selectedMoods: [],     // write-modal: toggled mood chip values
     bannerMsg: null        // single source of truth for the top banner (see renderBanner)
   };
@@ -1182,6 +1210,18 @@
     { name:'재첩국거리', dx:16,  dy:5,   anchor:'start'  }
   ];
 
+  // A record saved with its own coordinates pins exactly there, as long as the
+  // point falls inside the window this map draws.
+  function entryPoint(e){
+    if (typeof e.lat !== 'number' || typeof e.lng !== 'number') return null;
+    var b = MAP_BOX;
+    if (e.lng < b.west || e.lng > b.east || e.lat > b.north || e.lat < b.south) return null;
+    return {
+      x: b.x0 + (e.lng - b.west) / (b.east - b.west) * (b.x1 - b.x0),
+      y: b.y0 + (b.north - e.lat) / (b.north - b.south) * (b.y1 - b.y0)
+    };
+  }
+
   function placePoint(name){
     var c = PLACE_COORDS[name];
     if (!c) return null;
@@ -1189,6 +1229,108 @@
       x: MAP_BOX.x0 + (c[1] - MAP_BOX.west) / (MAP_BOX.east - MAP_BOX.west) * (MAP_BOX.x1 - MAP_BOX.x0),
       y: MAP_BOX.y0 + (MAP_BOX.north - c[0]) / (MAP_BOX.north - MAP_BOX.south) * (MAP_BOX.y1 - MAP_BOX.y0)
     };
+  }
+
+  // Real place lookup. The deployed site can reach Nominatim (OpenStreetMap, no
+  // key); inside an artifact the request is blocked, so the first failure flips
+  // this and everything falls back to the landmarks the app already knows.
+  var NOMINATIM = 'https://nominatim.openstreetmap.org';
+  var lookupOnline = true;
+
+  function kmBetween(aLat, aLng, bLat, bLng){
+    var dLat = (aLat - bLat) * 110.57;
+    var dLng = (aLng - bLng) * 111.32 * Math.cos(aLat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  }
+  function nearestKnownPlace(lat, lng){
+    var best = null, bestKm = Infinity;
+    Object.keys(PLACE_COORDS).forEach(function(name){
+      var c = PLACE_COORDS[name];
+      var km = kmBetween(lat, lng, c[0], c[1]);
+      if (km < bestKm){ bestKm = km; best = name; }
+    });
+    return bestKm <= 1.2 ? best : null;
+  }
+
+  function reverseGeocode(lat, lng){
+    if (!lookupOnline) return Promise.resolve(null);
+    return fetch(NOMINATIM + '/reverse?format=jsonv2&zoom=18&accept-language=ko' +
+        '&lat=' + lat + '&lon=' + lng)
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d) return null;
+        var a = d.address || {};
+        // A named spot if the point has one, otherwise the smallest area name.
+        return d.name || a.tourism || a.amenity || a.shop || a.building ||
+          [a.neighbourhood, a.village, a.town, a.suburb, a.city, a.county]
+            .filter(Boolean)[0] || null;
+      })
+      .catch(function(){ lookupOnline = false; return null; });
+  }
+
+  function localSearch(q){
+    var s = q.trim();
+    if (!s) return [];
+    return Object.keys(PLACE_COORDS)
+      .filter(function(n){ return n.indexOf(s) !== -1; })
+      .map(function(n){
+        return { name:n, detail:'등록된 명소', lat:PLACE_COORDS[n][0], lng:PLACE_COORDS[n][1] };
+      });
+  }
+  function searchPlaces(q){
+    if (!lookupOnline) return Promise.resolve(localSearch(q));
+    return fetch(NOMINATIM + '/search?format=jsonv2&limit=6&countrycodes=kr' +
+        '&accept-language=ko&q=' + encodeURIComponent(q))
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(list){
+        return (list || []).map(function(d){
+          return {
+            name: (d.name || String(d.display_name || '').split(',')[0]).trim(),
+            detail: d.display_name || '',
+            lat: parseFloat(d.lat), lng: parseFloat(d.lon)
+          };
+        });
+      })
+      .catch(function(){ lookupOnline = false; return localSearch(q); });
+  }
+
+  function setLocHint(msg){
+    var el = document.getElementById('locHint');
+    el.textContent = msg || '';
+    el.style.display = msg ? '' : 'none';
+  }
+  function showLocResults(list){
+    var box = document.getElementById('locResults');
+    if (!list || !list.length){ box.innerHTML = ''; box.style.display = 'none'; return; }
+    box.innerHTML = list.map(function(r, i){
+      return '<button type="button" class="locresult" data-i="'+i+'">' +
+        escapeHtml(r.name) +
+        (r.detail ? '<small>'+escapeHtml(r.detail)+'</small>' : '') +
+      '</button>';
+    }).join('');
+    box.style.display = '';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-i]'), function(btn){
+      btn.addEventListener('click', function(){
+        var r = list[parseInt(btn.getAttribute('data-i'), 10)];
+        applyFoundPlace(r.name, r.lat, r.lng, '검색한 위치로 지도에 표시됩니다.');
+        document.getElementById('locSearch').value = '';
+        showLocResults(null);
+      });
+    });
+  }
+
+  // The text stays the author's to edit; the coordinates ride along separately,
+  // so renaming the place later does not throw the position away.
+  function applyFoundPlace(name, lat, lng, hint){
+    state.pendingLat = lat;
+    state.pendingLng = lng;
+    if (name){
+      var field = document.getElementById('fLocation');
+      var tags = splitTags(field.value);
+      if (tags.indexOf(name) === -1) tags.push(name);
+      field.value = tags.join(', ');
+    }
+    setLocHint(hint + (name ? '' : ' 장소 이름은 직접 적어주세요.'));
   }
 
   function renderMap(){
@@ -1203,10 +1345,12 @@
     var onMap = [], adrift = [], pinned = {};
     filteredEntries(true).forEach(function(e){
       var tags = splitTags(e.location);
-      var name = null, p = null;
-      for (var i = 0; i < tags.length; i++){
-        var q = placePoint(tags[i]);
-        if (q){ name = tags[i]; p = q; break; }
+      var name = tags[0] || '', p = entryPoint(e);
+      if (!p){
+        for (var i = 0; i < tags.length; i++){
+          var q = placePoint(tags[i]);
+          if (q){ name = tags[i]; p = q; break; }
+        }
       }
       if (p){
         onMap.push({ e:e, place:name, p:p });
@@ -1706,6 +1850,11 @@
     state.pendingFiles = [];
     state.selectedLocs = [];
     state.selectedMoods = [];
+    state.pendingLat = null;
+    state.pendingLng = null;
+    setLocHint('');
+    showLocResults(null);
+    document.getElementById('locSearch').value = '';
     renderLocChips();
     renderMoodChips();
     renderThumbs();
@@ -1791,6 +1940,55 @@
     renderThumbs();
   });
 
+  (function(){
+    var hereBtn = document.getElementById('locHere');
+    var searchBox = document.getElementById('locSearch');
+    if (!hereBtn || !searchBox) return;
+
+    hereBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      if (!navigator.geolocation){
+        setLocHint('이 브라우저에서는 현재 위치를 쓸 수 없어요. 장소를 직접 적어주세요.');
+        return;
+      }
+      hereBtn.disabled = true;
+      setLocHint('현재 위치를 찾는 중이에요…');
+      navigator.geolocation.getCurrentPosition(function(pos){
+        var lat = pos.coords.latitude, lng = pos.coords.longitude;
+        reverseGeocode(lat, lng).then(function(found){
+          hereBtn.disabled = false;
+          var name = found || nearestKnownPlace(lat, lng);
+          applyFoundPlace(name, lat, lng,
+            found ? '현재 위치를 찾았어요.'
+                  : (name ? '가까운 장소로 채웠어요.' : '현재 위치를 저장했어요.'));
+        });
+      }, function(err){
+        hereBtn.disabled = false;
+        setLocHint(err && err.code === 1
+          ? '위치 권한이 꺼져 있어요. 장소를 직접 적어주세요.'
+          : '현재 위치를 찾지 못했어요. 장소를 직접 적어주세요.');
+      }, { enableHighAccuracy:true, timeout:10000, maximumAge:60000 });
+    });
+
+    // Debounced: Nominatim asks for at most one request a second.
+    var searchTimer = null;
+    searchBox.addEventListener('input', function(){
+      var q = searchBox.value.trim();
+      clearTimeout(searchTimer);
+      if (q.length < 2){ showLocResults(null); return; }
+      searchTimer = setTimeout(function(){
+        searchPlaces(q).then(function(list){
+          if (searchBox.value.trim() !== q) return;
+          showLocResults(list);
+          if (!list || !list.length) setLocHint('찾은 장소가 없어요. 직접 적어주세요.');
+        });
+      }, 500);
+    });
+    searchBox.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') e.preventDefault();
+    });
+  })();
+
   document.getElementById('fabAdd').addEventListener('click', openModal);
   document.getElementById('modalCancel').addEventListener('click', closeModal);
 
@@ -1824,16 +2022,21 @@
         location: location,
         mood: mood,
         text: text,
-        media: out.media
+        media: out.media,
+        lat: state.pendingLat,
+        lng: state.pendingLng
       };
       return sb.from('entries').insert(payload).then(function(res){
         // If the Supabase migration that adds the "mood" column hasn't been run yet,
         // don't let that break saving the entry entirely — drop mood and retry once
         // so text/location/photos still save normally. This is also the most likely
         // reason mood tags would be selected in the modal but never show up in the feed.
-        if (res.error && /mood/i.test(res.error.message || '')){
+        // Same idea for the lat/lng columns: a missing column should cost the
+        // coordinates, not the whole record.
+        if (res.error && /(mood|lat|lng)/i.test(res.error.message || '')){
+          var drop = /(lat|lng)/i.test(res.error.message || '') ? ['lat','lng'] : ['mood'];
           var fallback = {};
-          for (var k in payload){ if (k !== 'mood') fallback[k] = payload[k]; }
+          for (var k in payload){ if (drop.indexOf(k) === -1) fallback[k] = payload[k]; }
           return sb.from('entries').insert(fallback).then(function(res2){
             return { res: res2, failedCount: out.failedCount, moodDropped: true };
           });
@@ -1955,7 +2158,9 @@
       location: row.location || '',
       mood: row.mood || '',
       text: row.text || '',
-      media: Array.isArray(row.media) ? row.media : []
+      media: Array.isArray(row.media) ? row.media : [],
+      lat: typeof row.lat === 'number' ? row.lat : null,
+      lng: typeof row.lng === 'number' ? row.lng : null
     };
   }
 
