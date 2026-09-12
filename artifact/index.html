@@ -1553,11 +1553,13 @@
       e.preventDefault();
     }, true);
     canvas.addEventListener('pointerdown', function(e){
+      swallowClick = false;
       pts[e.pointerId] = { x:e.clientX, y:e.clientY };
+      // The buttons drawn over the map are not map: a press on one is its own.
+      if (e.target && e.target.closest && e.target.closest('.map-expand')) return;
       if (Object.keys(pts).length === 1 && canRoamMap()){
         drag = { id:e.pointerId, x:e.clientX, y:e.clientY };
         canvas.classList.add('dragging');
-        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
       }
     });
     canvas.addEventListener('pointermove', function(e){
@@ -1610,6 +1612,10 @@
     }
     canvas.addEventListener('pointerup', lift);
     canvas.addEventListener('pointercancel', lift);
+    // Without pointer capture the finger can leave the map mid-drag, so the
+    // release is also watched for out here.
+    window.addEventListener('pointerup', lift);
+    window.addEventListener('pointercancel', lift);
 
     // A trackpad pinch reaches the page as a wheel event with ctrl held.
     canvas.addEventListener('wheel', function(e){
