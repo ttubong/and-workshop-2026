@@ -327,6 +327,10 @@
   .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
   .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:14px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
   .chip.on{background:var(--moss); border-color:var(--moss); color:#fff;}
+  /* Places someone registered while writing, told apart from the ones the app
+     shipped with: dashed, and in the other colour. */
+  .chip.added{border-style:dashed; border-color:var(--river); color:var(--river);}
+  .chip.added.on{background:var(--river); border-color:var(--river); border-style:solid; color:#fff;}
   .loctools{display:flex; gap:6px; margin:0 0 8px;}
   .locsearch{position:relative; flex:1 1 auto; min-width:0;}
   .locsearch input{padding-right:40px;}
@@ -2007,12 +2011,36 @@
     if (e.target === e.currentTarget) closeModal();
   });
 
+  // Places people registered themselves, read back out of the records so the
+  // next person can tap what the last one typed instead of typing it again.
+  function addedPlaces(){
+    var at = {}, order = [];
+    (state.entries || []).forEach(function(e){
+      var tags = splitTags(e.location);
+      tags.forEach(function(t){
+        if (!t || LOC_PRESETS.indexOf(t) !== -1) return;
+        if (!at[t]){ at[t] = { lat:null, lng:null }; order.push(t); }
+        // One place and one position: that position belongs to this name.
+        if (tags.length === 1 && e.lat != null && e.lng != null && at[t].lat == null){
+          at[t].lat = e.lat; at[t].lng = e.lng;
+        }
+      });
+    });
+    state.selectedLocs.forEach(function(t){
+      if (t && LOC_PRESETS.indexOf(t) === -1 && !at[t]){ at[t] = { lat:null, lng:null }; order.push(t); }
+    });
+    return { order:order.slice(0, 24), at:at };
+  }
+
   function renderLocChips(){
     var wrap = document.getElementById('locChips');
-    var added = state.selectedLocs.filter(function(p){ return LOC_PRESETS.indexOf(p) === -1; });
-    wrap.innerHTML = LOC_PRESETS.concat(added).map(function(p){
-      var on = state.selectedLocs.indexOf(p) !== -1;
-      return '<button type="button" class="chip '+(on?'on':'')+'" data-loc="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>';
+    var extra = addedPlaces();
+    var rows = LOC_PRESETS.map(function(p){ return { name:p, added:false }; })
+      .concat(extra.order.map(function(p){ return { name:p, added:true }; }));
+    wrap.innerHTML = rows.map(function(r){
+      var on = state.selectedLocs.indexOf(r.name) !== -1;
+      return '<button type="button" class="chip '+(r.added?'added ':'')+(on?'on':'')+'" ' +
+        'data-loc="'+escapeHtml(r.name)+'">'+escapeHtml(r.name)+'</button>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-loc]'), function(b){
       b.addEventListener('click', function(e){
@@ -2022,9 +2050,11 @@
         state.selectedLocs = on ? [] : [v];
         document.getElementById('locSearch').value = on ? '' : v;
         showLocResults(null);
-        // A preset carries its own position, so a searched one's coordinates go.
-        state.pendingLat = null;
-        state.pendingLng = null;
+        // A preset carries its own position; an added place brings back the one
+        // it was first saved with, so it lands on the same spot as before.
+        var c = (!on && extra.at[v]) ? extra.at[v] : null;
+        state.pendingLat = c ? c.lat : null;
+        state.pendingLng = c ? c.lng : null;
         renderLocChips();
       });
     });
