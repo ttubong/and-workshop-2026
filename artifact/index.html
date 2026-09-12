@@ -138,6 +138,12 @@
     fill:var(--ink); font-size:9px; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif;
   }
+  .map-place{
+    fill:var(--ink-soft); font-size:9px;
+    font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
+    stroke:var(--paper); stroke-width:3px; stroke-linejoin:round;
+  }
+  .map-dot{fill:var(--ink-soft); opacity:.5;}
   .map-pin .pin-name{
     fill:var(--ink); font-size:9px; font-weight:700; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
@@ -540,7 +546,7 @@
     {key:'09-16', label:'2일 차', short:'D2', cls:'d2'},
     {key:'09-17', label:'3일 차', short:'D3', cls:'d3'}
   ];
-  var LOC_PRESETS = ['구례','하동','화개장터','최참판댁','섬진강','재첩국거리','빵집','밤나무길','바베큐 자리','닭구이집','숙소'];
+  var LOC_PRESETS = ['구례','하동','화개장터','쌍계사','최참판댁','악양','섬진강','재첩국거리','빵집','밤나무길','바베큐 자리','닭구이집','숙소'];
   var MOOD_PRESETS = ['설렘','행복','평온','신남','뭉클','힐링','웃음 터짐','뿌듯함','피곤함','아쉬움','놀라움','그리움'];
   var MOOD_EMOJI = {
     '설렘':'💓', '행복':'😊', '평온':'😌', '신남':'🤩', '뭉클':'🥹', '힐링':'🧘',
@@ -1101,6 +1107,16 @@
     '하동':       [35.067, 127.751],
     '재첩국거리': [35.062, 127.759]
   };
+  var LANDMARKS = [
+    { name:'구례',       dx:-20, dy:4,   anchor:'end'    },
+    { name:'쌍계사',     dx:0,   dy:-11, anchor:'middle' },
+    { name:'화개장터',   dx:0,   dy:14,  anchor:'middle' },
+    { name:'최참판댁',   dx:0,   dy:15,  anchor:'middle' },
+    { name:'악양',       dx:26,  dy:-4,  anchor:'start'  },
+    { name:'하동',       dx:-12, dy:18,  anchor:'middle' },
+    { name:'재첩국거리', dx:16,  dy:5,   anchor:'start'  }
+  ];
+
   function placePoint(name){
     var c = PLACE_COORDS[name];
     if (!c) return null;
@@ -1117,17 +1133,35 @@
 
     // Every filter except place shapes the map, so choosing a place highlights
     // its records instead of emptying the map.
-    var onMap = [], offRecords = 0, offNames = {};
+    var onMap = [], offRecords = 0, offNames = {}, pinned = {};
     filteredEntries(true).forEach(function(e){
-      var name = splitTags(e.location)[0] || '';
-      var p = placePoint(name);
+      var tags = splitTags(e.location);
+      var name = null, p = null;
+      for (var i = 0; i < tags.length; i++){
+        var q = placePoint(tags[i]);
+        if (q){ name = tags[i]; p = q; break; }
+      }
       if (p){
         onMap.push({ e:e, place:name, p:p });
+        pinned[name] = true;
       } else {
         offRecords++;
-        if (name) offNames[name] = true;
+        if (tags[0]) offNames[tags[0]] = true;
       }
     });
+
+    // Named landmarks sit at their own coordinates, so the map reads as this
+    // valley before anything is recorded. Once a place has records its pins take
+    // the spot and the name steps aside.
+    var landmarks = LANDMARKS.map(function(L){
+      var lp = placePoint(L.name);
+      if (!lp) return '';
+      if (pinned[L.name]) return '';
+      return '<circle class="map-dot" cx="'+lp.x.toFixed(1)+'" cy="'+lp.y.toFixed(1)+'" r="2.5"/>' +
+        '<text class="map-place" text-anchor="'+L.anchor+'" ' +
+        'x="'+(lp.x + L.dx).toFixed(1)+'" y="'+(lp.y + L.dy).toFixed(1)+'">' +
+        escapeHtml(L.name) + '</text>';
+    }).join('');
 
     var marks = onMap.map(function(it, i){
       var e = it.e;
@@ -1175,7 +1209,7 @@
         '</g>';
     }).join('');
 
-    pins.innerHTML = marks;
+    pins.innerHTML = landmarks + marks;
 
     var offPlaceCount = Object.keys(offNames).length;
     if (offRecords){
