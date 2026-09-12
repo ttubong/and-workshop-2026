@@ -123,7 +123,7 @@
   .mapwrap{background:var(--paper); border-bottom:1px solid var(--line);}
   /* Full screen: the same map, filling the window. */
   .mapwrap.full{
-    position:fixed; inset:0; z-index:60; border-bottom:none;
+    position:fixed; inset:0; z-index:50; border-bottom:none;
     display:flex; flex-direction:column;
   }
   .mapwrap.full .mapview{max-width:none; width:100%; flex:1; display:flex;}
@@ -187,8 +187,9 @@
     fill:var(--ink); font-size:12px; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif;
   }
-  /* Drawn last, over the pins: a place keeps its name even when a pin covers
-     the spot, so the halo has to carry it over whatever is underneath. */
+  /* Every place keeps its name, drawn under the pins. Names are decoration, so
+     they never take a tap meant for a pin. */
+  .map-place, .map-dot{pointer-events:none;}
   .map-place{
     fill:var(--ink-soft); font-size:9px;
     font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
@@ -226,10 +227,15 @@
   .daytag.d0{background:var(--ink-soft);}
   .card-text{font-size:16px; line-height:1.65; white-space:pre-wrap; margin:0 0 10px;}
   .card-media{display:grid; grid-template-columns:repeat(auto-fit, minmax(90px,1fr)); gap:6px; margin-bottom:10px;}
-  .card-media img, .card-media video{width:100%; height:130px; object-fit:cover; border-radius:8px; background:var(--paper-2); display:block;}
+  /* Square, however many are attached: the grid sets the width and the tile
+     takes its height from that. */
+  .card-media img, .card-media video{
+    width:100%; aspect-ratio:1 / 1; height:auto; object-fit:cover;
+    border-radius:8px; background:var(--paper-2); display:block;
+  }
   .card-media img{cursor:zoom-in;}
   .lightbox{
-    position:fixed; inset:0; background:rgba(10,12,8,0.92); z-index:60;
+    position:fixed; inset:0; background:rgba(10,12,8,0.92); z-index:70;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:14px; padding:28px;
   }
@@ -251,7 +257,7 @@
   .lightbox-close{
     position:fixed; top:16px; right:16px; width:40px; height:40px; border-radius:50%;
     background:rgba(255,255,255,0.15); color:#fff; border:none; font-size:22px; line-height:1;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:61;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:71;
   }
   .card-foot{display:flex; align-items:flex-end; justify-content:space-between; gap:8px;}
   .tags-stack{display:flex; flex-direction:column; gap:6px; flex:1; min-width:0;}
@@ -305,14 +311,14 @@
      own top off the screen. dvh is the part actually on screen. */
   .overlay{
     position:fixed; inset:0; height:100dvh;
-    background:rgba(20,24,17,0.5); z-index:50;
+    background:rgba(20,24,17,0.5); z-index:60;
     display:flex; align-items:flex-end; justify-content:center;
     overflow-x:hidden; max-width:100vw;
   }
   @media (min-width:640px){ .overlay{align-items:center;} }
   .sheet{
     background:var(--surface); width:100%; max-width:520px; border-radius:18px 18px 0 0;
-    max-height:92vh; max-height:92dvh;
+    max-height:90vh; max-height:90dvh;
     border:1px solid var(--line); border-bottom:none; box-sizing:border-box;
     display:flex; flex-direction:column; overflow:hidden;
   }
@@ -366,7 +372,10 @@
     cursor:pointer; padding:0;
   }
   .locsearch-go{right:1px; border-radius:0 8px 8px 0;}
-  .locsearch-clear{right:40px; width:30px;}
+  /* Shown by the class, not by the hidden attribute: display:flex above would
+     otherwise win over the browser's own rule for [hidden]. */
+  .locsearch-clear{right:40px; width:30px; display:none;}
+  .locsearch.filled .locsearch-clear{display:flex;}
   .locbtn{
     flex:0 0 auto; display:flex; align-items:center; gap:5px;
     border:1px solid var(--line); background:var(--card); color:var(--ink);
@@ -401,7 +410,12 @@
   }
   .thumb .up{position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; text-align:center;}
   .thumb .up.err{background:rgba(180,50,40,.82); font-weight:700;}
-  .sheet-actions{display:flex; gap:8px; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); flex:0 0 auto;}
+  /* Room under the buttons: the phone's own bottom bar sits over the last few
+     pixels of the page, and the home indicator over a few more. */
+  .sheet-actions{
+    display:flex; gap:8px; flex:0 0 auto;
+    padding:12px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
   .btn{flex:1; border:none; border-radius:9px; padding:12px; font-size:16px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer;}
   .btn.primary{background:var(--cta); color:var(--cta-ink);}
   .btn.ghost{background:var(--card); color:var(--ink-soft); border:1px solid var(--line); flex:0 0 auto;}
@@ -979,14 +993,36 @@
   // Any overlay/bottom-sheet open should stop the page behind the dim from scrolling.
   // Tracks a count instead of a boolean so briefly-overlapping open/close calls
   // (e.g. closeGate() immediately followed by openModal()) can't unlock too early.
-  var openOverlayCount = 0;
+  //
+  // overflow:hidden alone does not hold a phone: the document keeps scrolling
+  // under the sheet. Pinning the body and offsetting it by the scroll position
+  // leaves nothing to scroll, and the offset is given back on close so the page
+  // is where it was left.
+  var openOverlayCount = 0, lockedY = 0;
   function lockScroll(){
+    if (openOverlayCount === 0){
+      lockedY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var b = document.body.style;
+      b.position = 'fixed';
+      b.top = (-lockedY) + 'px';
+      b.left = '0';
+      b.right = '0';
+      b.width = '100%';
+      b.overflow = 'hidden';
+    }
     openOverlayCount++;
-    document.body.style.overflow = 'hidden';
   }
   function unlockScroll(){
     openOverlayCount = Math.max(0, openOverlayCount - 1);
-    if (openOverlayCount === 0) document.body.style.overflow = '';
+    if (openOverlayCount !== 0) return;
+    var b = document.body.style;
+    b.position = '';
+    b.top = '';
+    b.left = '';
+    b.right = '';
+    b.width = '';
+    b.overflow = '';
+    window.scrollTo(0, lockedY);
   }
 
   function cardHtml(e){
@@ -1658,8 +1694,9 @@
         '</g>';
     }).join('');
 
-    // Names last, so a pin sitting on a place never hides what the place is.
-    pins.innerHTML = band + marks + landmarks;
+    // Names first, pins over them: every place still keeps its name, but a pin
+    // is the thing people reach for, so it sits on top.
+    pins.innerHTML = landmarks + band + marks;
     fitBubbles(pins);
     applyMapZoom();
 
@@ -2320,7 +2357,16 @@
     });
     // Clearing the box clears the place with it: the field is what says which
     // place the record is getting, so leaving a chosen place behind would lie.
-    document.getElementById('locClear').addEventListener('click', function(e){
+    var clearBtn = document.getElementById('locClear');
+    var clearHadFocus = false;
+    // Pressing the button must not pull the caret — and the phone keyboard —
+    // into a field the writer was not typing in. Noted before the press moves
+    // focus anywhere, and the press itself is kept from taking it.
+    clearBtn.addEventListener('mousedown', function(e){
+      clearHadFocus = (document.activeElement === searchBox);
+      e.preventDefault();
+    });
+    clearBtn.addEventListener('click', function(e){
       e.preventDefault();
       searchBox.value = '';
       syncLocClear();
@@ -2331,7 +2377,8 @@
       renderLocChips();
       showLocResults(null);
       setLocHint('');
-      searchBox.focus();
+      if (clearHadFocus) searchBox.focus();
+      clearHadFocus = false;
     });
     searchBox.addEventListener('keydown', function(e){
       if (e.key !== 'Enter') return;
