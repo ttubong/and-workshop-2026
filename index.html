@@ -58,30 +58,34 @@
   }
   /* The header sits inside .wrap, which already supplies the 20px inset, so this
      adds none of its own — otherwise the title is indented past the cards below. */
-  .top-inner{max-width:640px; margin:0 auto; padding:14px 0 10px;}
-  .eyebrow{
-    font-family:'Noto Sans KR',sans-serif; font-size:12px; letter-spacing:.12em;
-    text-transform:uppercase; color:var(--moss); margin:0 0 4px;
+  .top-inner{max-width:640px; margin:0 auto; padding:4px 0 10px;}
+  /* Top navigation: brand on the left, the two controls on the right. */
+  .topnav{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; min-height:48px;
+  }
+  .logo{
+    font-family:'Noto Sans KR',sans-serif; font-size:12px; font-weight:700;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--moss);
+    white-space:nowrap;
   }
   h1.title{
     font-family:'Noto Sans KR',sans-serif; font-weight:700;
-    font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
+    font-size:24px; line-height:1.25; margin:10px 0 2px; text-wrap:balance;
   }
   .subtitle{font-size:14px; color:var(--ink-soft); margin:0 0 12px;}
   .stats{display:flex; gap:14px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
-  .top-row{display:flex; align-items:flex-start; gap:12px;}
-  .top-text{flex:1; min-width:0;}
-  .top-actions{flex:0 0 auto; display:flex; align-items:flex-start; gap:8px;}
+  .top-actions{flex:0 0 auto; display:flex; align-items:center; gap:8px;}
   /* Same circle as the profile avatar, so the two header controls read as a pair. */
   .hdr-btn{
-    flex:0 0 auto; width:38px; height:38px; margin-top:2px; padding:0;
+    flex:0 0 auto; width:38px; height:38px; padding:0;
     border-radius:50%; border:1px solid var(--line);
     background:var(--paper-2); color:var(--ink-soft);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .me{
-    flex:0 0 auto; background:none; border:none; padding:2px 0 0; cursor:pointer;
+    flex:0 0 auto; background:none; border:none; padding:0; cursor:pointer;
     display:flex; align-items:center; font-family:inherit;
   }
   .me .avatar{width:38px; height:38px; font-size:16px;}
@@ -424,19 +428,17 @@
 <div id="app" class="wrap" style="display:none;">
   <header class="top">
     <div class="top-inner">
-      <div class="top-row">
-        <div class="top-text">
-          <p class="eyebrow">Local Vibe</p>
-          <h1 class="title">구례·하동 채집함</h1>
-          <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
-        </div>
+      <nav class="topnav" aria-label="상단 메뉴">
+        <span class="logo">Local Vibe</span>
         <div class="top-actions">
           <button type="button" class="hdr-btn" id="itinBtn" aria-label="워크샵 일정 보기"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></button>
           <button type="button" class="me unset" id="meBtn">
           <span class="avatar" id="meAvatar"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
           </button>
         </div>
-      </div>
+      </nav>
+      <h1 class="title">구례·하동 채집함</h1>
+      <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
       <div class="stats">
         <span><b id="statCount">0</b>개 기록</span>
         <span><b id="statMembers">0</b>명 참여</span>
