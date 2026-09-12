@@ -7,40 +7,51 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
   :root{
-    --paper:#f1f3f5;
-    --paper-2:#e5e8ea;
-    --card:#fafbfc;
+    /* Black and white. Every grey here is a true grey -- no hue, no saturation.
+       The one colour left in the app is the river on the map. */
+    --paper:#ffffff;
+    --paper-2:#f1f1f1;
+    --card:#fafafa;
     /* Sheets and popups sit on their own surface, above the page's grey. */
     --surface:#ffffff;
-    /* Water on the map, kept apart from --river (a UI colour that happens to
-       share the name). */
+    /* The map keeps its two colours: the river runs blue, the ridge runs green.
+       Everything else in the app is grey. */
     --water:#4ea3dd;
-    --ink:#23272b;
-    --ink-soft:#636b73;
-    --line:#d6dade;
-    --accent:#c1592c;
-    --accent-ink:#fffaf5;
-    /* Action colour, kept separate from --accent: the accent still carries
-       moods, day tags and errors, which are meaning rather than actions. */
-    --cta:#1d3557;
+    --mountain:#5f8a55;
+    /* Text runs on three steps and nothing else -- black for what is being
+       read, dark grey for what supports it, light grey for what is only
+       glanced at. */
+    --ink:#101010;
+    --ink-mid:#404040;
+    --ink-soft:#787878;
+    --line:#e3e3e3;
+    --accent:#2b2b2b;
+    --accent-ink:#ffffff;
+    --cta:#111111;
     --cta-ink:#ffffff;
-    --moss:#4b6b4a;
-    --river:#3e5c63;
-    --shadow:rgba(30,36,42,0.12);
+    --moss:#2b2b2b;
+    --river:#6e6e6e;
+    --shadow:rgba(0,0,0,0.10);
+    /* Each person keeps their own hue here — the one place colour still names
+       someone, on their avatar and on their pin. */
     --avatar-l:85%;
     --avatar-l2:28%;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --paper:#1a1d20; --paper-2:#22262a; --card:#262b2f; --surface:#22262a; --water:#5fb0e5; --ink:#e6e9ec; --ink-soft:#a2a9b0;
-      --line:#373d42; --accent:#e2895a; --accent-ink:#241207; --cta:#33518a; --cta-ink:#ffffff; --moss:#8cb483; --river:#8cb6bc;
-      --shadow:rgba(0,0,0,0.5); --avatar-l:30%; --avatar-l2:88%;
+      --paper:#141414; --paper-2:#1f1f1f; --card:#232323; --surface:#1f1f1f; --water:#5fb0e5; --mountain:#7da872;
+      --ink:#f2f2f2; --ink-mid:#b3b3b3; --ink-soft:#828282;
+      --line:#333333; --accent:#e6e6e6; --accent-ink:#141414; --cta:#f2f2f2; --cta-ink:#141414;
+      --moss:#dcdcdc; --river:#9b9b9b;
+      --shadow:rgba(0,0,0,0.6); --avatar-l:30%; --avatar-l2:88%;
     }
   }
   :root[data-theme="dark"]{
-    --paper:#1a1d20; --paper-2:#22262a; --card:#262b2f; --surface:#22262a; --water:#5fb0e5; --ink:#e6e9ec; --ink-soft:#a2a9b0;
-    --line:#373d42; --accent:#e2895a; --accent-ink:#241207; --cta:#33518a; --cta-ink:#ffffff; --moss:#8cb483; --river:#8cb6bc;
-    --shadow:rgba(0,0,0,0.5); --avatar-l:30%; --avatar-l2:88%;
+    --paper:#141414; --paper-2:#1f1f1f; --card:#232323; --surface:#1f1f1f; --water:#5fb0e5; --mountain:#7da872;
+    --ink:#f2f2f2; --ink-mid:#b3b3b3; --ink-soft:#828282;
+    --line:#333333; --accent:#e6e6e6; --accent-ink:#141414; --cta:#f2f2f2; --cta-ink:#141414;
+    --moss:#dcdcdc; --river:#9b9b9b;
+    --shadow:rgba(0,0,0,0.6); --avatar-l:30%; --avatar-l2:88%;
   }
   *{box-sizing:border-box;}
   html,body{margin:0; background:var(--paper); overflow-x:clip; max-width:100%;}
@@ -80,15 +91,16 @@
     font-family:'Noto Sans KR',sans-serif; font-weight:700;
     font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
   }
-  .subtitle{font-size:14px; color:var(--ink-soft); margin:0 0 12px;}
-  .stats{display:flex; gap:14px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
+  .subtitle{font-size:14px; color:var(--ink-mid); margin:0 0 12px;}
+  .stats{display:flex; gap:8px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
+  .stats span + span::before{content:'·'; opacity:.6; margin-right:8px;}
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
   .top-actions{flex:0 0 auto; display:flex; align-items:center; gap:8px;}
   /* Same circle as the profile avatar, so the two header controls read as a pair. */
   .hdr-btn{
     flex:0 0 auto; width:38px; height:38px; padding:0;
     border-radius:50%; border:1px solid var(--line);
-    background:var(--paper-2); color:var(--ink-soft);
+    background:var(--paper-2); color:var(--ink-mid);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .me{
@@ -97,13 +109,13 @@
   }
   .me .avatar{width:38px; height:38px; font-size:16px;}
   .me.unset .avatar{
-    background:var(--paper-2); color:var(--ink-soft);
+    background:var(--paper-2); color:var(--ink-mid);
     border:1px dashed var(--line); font-weight:400;
   }
   .scrollrow{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; -ms-overflow-style:none; scrollbar-width:none;}
   .scrollrow::-webkit-scrollbar{display:none;}
   .pill{
-    flex:0 0 auto; border:1px solid var(--line); background:var(--card); color:var(--ink-soft);
+    flex:0 0 auto; border:1px solid var(--line); background:var(--surface); color:var(--ink-mid);
     padding:6px 12px; border-radius:999px; font-size:14px; cursor:pointer; white-space:nowrap;
     transition:background .15s, color .15s, border-color .15s;
     display:inline-flex; align-items:center; gap:5px;
@@ -116,8 +128,8 @@
   .itin-list{font-size:14px; line-height:1.7; color:var(--ink);}
   .itin-day{margin-top:12px;}
   .itin-day:first-child{margin-top:0;}
-  .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--river);}
-  .feed{margin-top:28px; display:flex; flex-direction:column; gap:12px;}
+  .itin-day b{font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--ink-mid);}
+  .feed{margin-top:28px; display:flex; flex-direction:column; gap:40px;}
   /* Map. Artifacts cannot load map tiles, so the valley is drawn by hand; the
      pins are not — each sits at its place's real latitude and longitude. */
   .mapwrap{background:var(--paper); border-bottom:1px solid var(--line);}
@@ -165,9 +177,10 @@
     stroke:color-mix(in srgb, var(--moss) 32%, transparent);
     stroke-width:0.8; stroke-linejoin:round;
   }
+  /* The 지리산 ridge stays green — a mountain reads as a mountain. */
   .map-ridge{
-    fill:none; stroke:color-mix(in srgb, var(--moss) 45%, transparent);
-    stroke-width:2; stroke-linejoin:round; stroke-linecap:round;
+    fill:none; stroke:var(--mountain);
+    stroke-width:2.4; stroke-linejoin:round; stroke-linecap:round; opacity:.85;
   }
   .map-river{fill:none; stroke:var(--water); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; opacity:.9;}
   .map-label{fill:var(--ink-soft); font-size:11px; font-family:'Noto Sans KR',sans-serif;}
@@ -206,27 +219,38 @@
   }
   .mapempty{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-size:14px; color:var(--ink-soft); text-align:center; padding:0 24px;
+    font-size:14px; color:var(--ink-mid); text-align:center; padding:0 24px;
   }
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 2px 10px var(--shadow);}
+  /* In the feed the records are the page, not boxes on it. Nothing between them
+     but space. */
+  .feed .card{
+    background:none; border:none; border-radius:0; padding:0; box-shadow:none;
+  }
   .card-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  /* Delete sits at the far right of the author row, pulled to the top so it
+     reads on the name's line rather than floating between the two. */
+  .card-head .del{margin-left:auto; align-self:flex-start;}
   .avatar{
     width:32px; height:32px; border-radius:50%;
     background:hsl(var(--h,140) 40% var(--avatar-l)); color:hsl(var(--h,140) 55% var(--avatar-l2));
     display:flex; align-items:center; justify-content:center;
     font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:14px; flex:0 0 auto;
   }
-  .who{flex:1; min-width:0;}
-  .who{display:flex; flex-direction:column;}
-  .who .name{font-weight:700; font-size:14px;}
-  .who .meta{font-size:12px; color:var(--ink-soft); display:flex; gap:6px; flex-wrap:wrap; margin-top:1px;}
-  .daytag{font-family:'Noto Sans KR',sans-serif; font-size:12px; padding:2px 7px; border-radius:999px; color:#fff; flex:0 0 auto;}
+  /* Who, where, when — one line, in that order. */
+  .who{flex:1; min-width:0; display:flex; align-items:baseline; flex-wrap:wrap; gap:0 6px;}
+  .who .name{font-weight:700; font-size:14px; color:var(--ink);}
+  .who .meta{font-size:12px; color:var(--ink-soft); display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; min-width:0;}
+  .who .meta .sep{color:var(--ink-soft); opacity:.6;}
+  .who .meta .place{display:inline-flex; align-items:center; gap:3px; min-width:0;}
+  .who .meta .at{max-width:14ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .daytag{font-family:'Noto Sans KR',sans-serif; font-size:12px; padding:2px 7px; border-radius:999px; color:var(--surface); flex:0 0 auto;}
   .daytag.d1{background:var(--river);}
   .daytag.d2{background:var(--moss);}
   .daytag.d3{background:var(--accent); color:var(--accent-ink);}
   .daytag.d0{background:var(--ink-soft);}
   .card-text{font-size:16px; line-height:1.65; white-space:pre-wrap; margin:0 0 10px;}
-  .card-media{display:grid; grid-template-columns:repeat(auto-fit, minmax(90px,1fr)); gap:6px; margin-bottom:10px;}
+  .card-media{display:grid; grid-template-columns:repeat(auto-fit, minmax(90px,1fr)); gap:6px;}
   /* Square, however many are attached: the grid sets the width and the tile
      takes its height from that. */
   .card-media img, .card-media video{
@@ -235,7 +259,7 @@
   }
   .card-media img{cursor:zoom-in;}
   .lightbox{
-    position:fixed; inset:0; background:rgba(10,12,8,0.92); z-index:70;
+    position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:70;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:14px; padding:28px;
   }
@@ -259,15 +283,15 @@
     background:rgba(255,255,255,0.15); color:#fff; border:none; font-size:22px; line-height:1;
     cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:71;
   }
-  .card-foot{display:flex; align-items:flex-end; justify-content:space-between; gap:8px;}
+  .card-foot{display:flex; align-items:flex-end; justify-content:space-between; gap:8px; margin-bottom:10px;}
   .tags-stack{display:flex; flex-direction:column; gap:6px; flex:1; min-width:0;}
   .tags-inline{display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; flex:1; min-width:0;}
-  .loc{font-size:12px; color:var(--river); display:flex; align-items:center; gap:4px; white-space:nowrap;}
-  .moodtag{font-size:12px; color:var(--accent); display:flex; align-items:center; gap:4px; white-space:nowrap;}
+  .loc{font-size:12px; color:var(--ink-mid); display:flex; align-items:center; gap:4px; white-space:nowrap;}
+  .moodtag{font-size:12px; color:var(--ink-mid); display:flex; align-items:center; gap:4px; white-space:nowrap;}
   .del{font-size:12px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 4px; flex:0 0 auto;}
-  .card-actions{display:flex; align-items:center; gap:14px; margin-top:10px; padding-top:10px; border-top:1px solid var(--line);}
+  .card-actions{display:flex; align-items:center; gap:14px; margin-top:12px;}
   .like-btn, .comment-toggle{
-    background:none; border:none; cursor:pointer; padding:2px 0; font-size:14px; color:var(--ink-soft);
+    background:none; border:none; cursor:pointer; padding:2px 0; font-size:14px; color:var(--ink-mid);
     display:flex; align-items:center; gap:5px; font-family:'Noto Sans KR',sans-serif;
   }
   .like-btn.on{color:var(--accent); font-weight:700;}
@@ -278,7 +302,7 @@
   .comment-item b{font-family:'Noto Sans KR',sans-serif; font-weight:700; flex:0 0 auto;}
   .comment-item .ctext{flex:1; min-width:0; overflow-wrap:break-word;}
   .cdel{font-size:12px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:2px 2px; flex:0 0 auto;}
-  .comment-empty{font-size:14px; color:var(--ink-soft);}
+  .comment-empty{font-size:14px; color:var(--ink-mid);}
   .comment-add{display:flex; gap:6px;}
   .comment-input{
     flex:1; min-width:0; border:1px solid var(--line); background:var(--paper-2); color:var(--ink);
@@ -288,13 +312,13 @@
     flex:0 0 auto; border:none; background:var(--cta); color:var(--cta-ink); border-radius:999px; padding:7px 14px;
     font-size:14px; font-weight:700; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
   }
-  .empty{text-align:center; padding:44px 20px; color:var(--ink-soft); border:1px dashed var(--line); border-radius:14px; font-size:16px; line-height:1.7;}
+  .empty{text-align:center; padding:44px 20px; color:var(--ink-mid); border:1px dashed var(--line); border-radius:14px; font-size:16px; line-height:1.7;}
   .sample-badge{
     display:inline-block; font-family:'Noto Sans KR',sans-serif; font-size:12px; letter-spacing:.08em;
     color:var(--ink-soft); border:1px solid var(--line); border-radius:999px; padding:1px 8px; margin-bottom:10px;
   }
   .sample{opacity:.6;}
-  .banner{background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; color:var(--ink-soft); margin:14px 0 0;}
+  .banner{background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; color:var(--ink-mid); margin:14px 0 0;}
   .banner.warn{border-color:var(--accent); color:var(--accent);}
   .fab{
     position:fixed; right:20px; bottom:22px; z-index:30;
@@ -311,7 +335,7 @@
      own top off the screen. dvh is the part actually on screen. */
   .overlay{
     position:fixed; inset:0; height:100dvh;
-    background:rgba(20,24,17,0.5); z-index:60;
+    background:rgba(0,0,0,0.45); z-index:60;
     display:flex; align-items:flex-end; justify-content:center;
     overflow-x:hidden; max-width:100vw;
   }
@@ -335,7 +359,7 @@
   .overlay.center .sheet.confirm .sheet-actions{padding-bottom:12px;}
   .sheet-head{padding:20px 18px 0; flex:0 0 auto;}
   .sheet-head h2{font-family:'Noto Sans KR',sans-serif; font-size:19px; margin:0 0 4px;}
-  .sheet-head .hint{font-size:14px; color:var(--ink-soft); margin:0 0 16px;}
+  .sheet-head .hint{font-size:14px; color:var(--ink-mid); margin:0 0 16px;}
   .sheet-body{padding:0 18px 16px; overflow-y:auto; overflow-x:hidden; flex:1 1 auto; min-height:0;}
   .sheet-body:last-child{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
   .field{display:block; margin-bottom:14px;}
@@ -353,12 +377,12 @@
   .field{min-width:0;}
   textarea{resize:vertical; min-height:80px; line-height:1.55;}
   .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
-  .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:14px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
-  .chip.on{background:var(--moss); border-color:var(--moss); color:#fff;}
+  .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-mid); border-radius:999px; padding:5px 11px; font-size:14px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
+  .chip.on{background:var(--moss); border-color:var(--moss); color:var(--surface);}
   /* Places someone registered while writing, told apart from the ones the app
      shipped with: dashed, and in the other colour. */
   .chip.added{border-style:dashed; border-color:var(--river); color:var(--river);}
-  .chip.added.on{background:var(--river); border-color:var(--river); border-style:solid; color:#fff;}
+  .chip.added.on{background:var(--river); border-color:var(--river); border-style:solid; color:var(--surface);}
   .loctools{display:flex; gap:6px; margin:0 0 8px;}
   .locsearch{position:relative; flex:1 1 auto; min-width:0;}
   /* Room for the magnifier, and for the clear button once there is something
@@ -397,9 +421,9 @@
   .locresult-new small{font-weight:400;}
   /* A hit that is only an address: it needs a name before it can be a place. */
   .locresult-addr small{color:var(--river);}
-  .locresult small{display:block; font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .locresult small{display:block; font-size:12px; color:var(--ink-mid); margin-top:2px;}
   .lochint{margin:0 0 8px; font-size:12px; color:var(--ink-soft);}
-  .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-soft); cursor:pointer;}
+  .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-mid); cursor:pointer;}
   .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
   .thumb{width:64px; height:64px; border-radius:8px; overflow:hidden; position:relative; background:var(--paper-2); border:1px solid var(--line);}
   .thumb img, .thumb video{width:100%; height:100%; object-fit:cover;}
@@ -418,9 +442,10 @@
   }
   .btn{flex:1; border:none; border-radius:9px; padding:12px; font-size:16px; font-family:'Noto Sans KR',sans-serif; font-weight:700; cursor:pointer;}
   .btn.primary{background:var(--cta); color:var(--cta-ink);}
-  .btn.ghost{background:var(--card); color:var(--ink-soft); border:1px solid var(--line); flex:0 0 auto;}
+  .btn.ghost{background:var(--card); color:var(--ink-mid); border:1px solid var(--line); flex:0 0 auto;}
   .btn:disabled{opacity:.55; cursor:default;}
-  .err{color:var(--accent); font-size:14px; margin:0 0 12px;}
+  /* No red to lean on, so an error says so by weight and wording. */
+  .err{color:var(--ink); font-weight:700; font-size:14px; margin:0 0 12px;}
   /* Profile sheet: everything one person has collected, opened from their name
      on any card. */
   .who-btn{
@@ -438,7 +463,7 @@
   }
   .profile-who{min-width:0;}
   .profile-name{font-size:16px; font-weight:700; overflow-wrap:break-word;}
-  .profile-status{font-size:14px; color:var(--ink-soft); margin-top:3px;}
+  .profile-status{font-size:14px; color:var(--ink-mid); margin-top:3px;}
   .profile-stats{
     display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color:var(--ink-soft);
     padding-bottom:14px; border-bottom:1px solid var(--line);
@@ -459,10 +484,10 @@
     width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;
     display:block; background:var(--paper-2); cursor:zoom-in;
   }
-  .profile-none{font-size:14px; color:var(--ink-soft);}
+  .profile-none{font-size:14px; color:var(--ink-mid);}
   .gate-names{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 16px;}
   .gate-name{border:1px solid var(--line); background:var(--card); border-radius:999px; padding:8px 14px; font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;}
-  .gate-name.active-filter{background:var(--moss); border-color:var(--moss); color:#fff;}
+  .gate-name.active-filter{background:var(--moss); border-color:var(--moss); color:var(--surface);}
   .filterbar{display:flex; flex-wrap:wrap; gap:6px; margin-top:2px;}
   .setup{
     max-width:520px; margin:60px auto; padding:24px; background:var(--card); border:1px solid var(--line);
@@ -784,6 +809,8 @@
     for (var i=0;i<String(str).length;i++){ h = (h*31 + String(str).charCodeAt(i)) >>> 0; }
     return h;
   }
+  // A hue per person: the avatar and the map pin are the one place colour is
+  // still doing work, telling people apart at a glance.
   function hashHue(str){ return hashInt(str) % 360; }
   // Avatar shows the first character of the nickname. Array.from keeps emoji and
   // other astral-plane characters whole instead of splitting a surrogate pair.
@@ -829,11 +856,15 @@
     if (!occurredAt) return '';
     var d = new Date(occurredAt);
     if (isNaN(d.getTime())) return occurredAt;
-    var mo = d.getMonth()+1, da = d.getDate();
     var hh = d.getHours(), mm = pad(d.getMinutes());
     var ampm = hh < 12 ? '오전' : '오후';
     var h12 = hh % 12; if (h12===0) h12 = 12;
-    return mo+'/'+da+' '+ampm+' '+h12+':'+mm;
+    var clock = ampm+' '+h12+':'+mm;
+    // Today needs no date on it — the time alone says when.
+    var now = new Date();
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()) return clock;
+    return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+clock;
   }
   function escapeHtml(s){
     return String(s||'').replace(/[&<>"']/g, function(c){
@@ -1035,7 +1066,9 @@
         return '<img src="'+m.url+'" alt="채집 사진" loading="lazy">';
       }).join('') + '</div>';
     }
-    var loc = tagBadges(e.location, 'loc', icon('map-pin', 13));
+    // The place is named up in the author row now, so it does not repeat below.
+    var firstPlace = splitTags(e.location)[0] || '';
+    var loc = '';
     var moodTag = tagBadges(e.mood, 'moodtag', moodEmoji);
 
     var likesObj = state.likesByEntry[e.id] || {};
@@ -1076,17 +1109,30 @@
             '<span class="avatar" style="--h:'+hue+'">'+escapeHtml(initial)+'</span>' +
             '<span class="who">' +
               '<span class="name">'+escapeHtml(e.authorName)+'</span>' +
-              '<span class="meta"><span class="mono">'+fmtWhen(e.occurredAt)+'</span></span>' +
+              '<span class="meta">' +
+                // The pin icon already separates the name from the place, so the
+                // dot is only needed when there is no place to lean on.
+                (firstPlace
+                  ? '<span class="place">'+icon('map-pin', 12)+
+                      '<span class="at">'+escapeHtml(firstPlace)+'</span></span>' +
+                    '<span class="sep">·</span>'
+                  : '<span class="sep">·</span>') +
+                '<span class="mono">'+fmtWhen(e.occurredAt)+'</span>' +
+              '</span>' +
             '</span>' +
           '</button>' +
           dayTag +
+          '<button class="del" data-del="'+e.id+'">삭제</button>' +
         '</div>' +
+        // What they wrote and how it felt, then the photo it is about.
         (e.text ? '<p class="card-text">'+escapeHtml(e.text)+'</p>' : '') +
+        (loc || moodTag
+          ? '<div class="card-foot"><div class="tags-stack">' +
+              (loc ? '<div class="tags-inline">'+loc+'</div>' : '') +
+              (moodTag ? '<div class="tags-inline">'+moodTag+'</div>' : '') +
+            '</div></div>'
+          : '') +
         media +
-        '<div class="card-foot"><div class="tags-stack">' +
-          (loc ? '<div class="tags-inline">'+loc+'</div>' : '') +
-          (moodTag ? '<div class="tags-inline">'+moodTag+'</div>' : '') +
-        '</div><button class="del" data-del="'+e.id+'">삭제</button></div>' +
         '<div class="card-actions">'+likeBtn+commentToggle+'</div>' +
         commentBody +
       '</article>'
@@ -1101,7 +1147,7 @@
           '<div class="card sample">' +
             '<div class="card-head">' +
               '<div class="avatar" style="--h:150">초</div>' +
-              '<div class="who"><div class="name">초이</div><div class="meta"><span class="mono">9/16 오전 11:20</span></div></div>' +
+              '<div class="who"><div class="name">초이</div><div class="meta"><span class="mono">9월 16일 오전 11:20</span></div></div>' +
               '<span class="daytag d2">2일 차</span>' +
             '</div>' +
             '<p class="card-text">화개장터에서 산 산수유차, 향이 진하다. 할머니가 직접 덖으셨다고.</p>' +
