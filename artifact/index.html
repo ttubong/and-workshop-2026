@@ -424,9 +424,7 @@
     color:hsl(var(--h,140) 55% var(--avatar-l2));
     display:flex; align-items:center; justify-content:center;
     font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:22px;
-    overflow:hidden;
   }
-  .profile-avatar img{width:100%; height:100%; object-fit:cover; display:block;}
   .profile-who{min-width:0;}
   .profile-name{font-size:16px; font-weight:700; overflow-wrap:break-word;}
   .profile-status{font-size:14px; color:var(--ink-soft); margin-top:3px;}
@@ -1193,9 +1191,9 @@
       ? moodEmoji(moods[0].name) + ' ' + moods[0].name + ' 모드'
       : '조용히 채집 중';
 
-    var face = photos.length
-      ? '<img src="'+escapeHtml(photos[0].url)+'" alt="">'
-      : escapeHtml(avatarInitial(name));
+    // The same face as the bar's top right: the initial on their own colour,
+    // never one of their photos.
+    var face = escapeHtml(avatarInitial(name));
 
     var moodHtml = moods.length
       ? '<div class="profile-moods">' + moods.map(function(m){
