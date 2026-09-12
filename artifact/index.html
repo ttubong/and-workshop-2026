@@ -45,7 +45,8 @@
      They stroke in currentColor, so each icon takes the color of its own control. */
   .ic{flex:0 0 auto; display:block;}
   .wrap{max-width:640px; margin:0 auto; padding-inline:20px; padding-block:0 96px;}
-  header.top{
+  /* The nav bar is what stays; the title block below it scrolls away. */
+  .topbar{
     position:sticky; top:0; z-index:20;
     background:color-mix(in srgb, var(--paper) 88%, transparent);
     backdrop-filter:blur(8px);
@@ -53,11 +54,12 @@
   }
   /* The header sits inside .wrap, which already supplies the 20px inset, so this
      adds none of its own — otherwise the title is indented past the cards below. */
-  .top-inner{max-width:640px; margin:0 auto; padding:4px 20px 10px;}
+  .top-inner{max-width:640px; margin:0 auto; padding:12px 20px 10px;}
   /* Top navigation: brand on the left, the two controls on the right. */
   .topnav{
+    max-width:640px; margin:0 auto; padding:0 20px;
     display:flex; align-items:center; justify-content:space-between;
-    gap:12px; min-height:48px;
+    gap:12px; min-height:52px;
   }
   .logo{
     font-family:'Inter','Helvetica Neue',Helvetica,Arial,sans-serif;
@@ -66,7 +68,7 @@
   }
   h1.title{
     font-family:'Noto Sans KR',sans-serif; font-weight:700;
-    font-size:24px; line-height:1.25; margin:10px 0 2px; text-wrap:balance;
+    font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
   }
   .subtitle{font-size:14px; color:var(--ink-soft); margin:0 0 12px;}
   .stats{display:flex; gap:14px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
@@ -402,9 +404,8 @@
   }
 </style>
 
-<header class="top">
-    <div class="top-inner">
-      <nav class="topnav" aria-label="상단 메뉴">
+<header class="topbar" aria-label="상단 메뉴">
+  <nav class="topnav">
         <span class="logo">Local Vibe</span>
         <div class="top-actions">
           <button type="button" class="hdr-btn" id="itinBtn" aria-label="워크샵 일정 보기"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></button>
@@ -412,16 +413,18 @@
           <span class="avatar" id="meAvatar"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
           </button>
         </div>
-      </nav>
+  </nav>
+</header>
+
+<div class="top-inner">
       <h1 class="title">구례·하동 채집함</h1>
       <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
       <div class="stats">
         <span><b id="statCount">0</b>개 기록</span>
         <span><b id="statMembers">0</b>명 참여</span>
       </div>
-      <div class="filterbar" id="filterBar"></div>
-    </div>
-</header>
+  <div class="filterbar" id="filterBar"></div>
+</div>
 
 <div id="app" class="wrap">
   <div class="wrap" style="padding:0;">
