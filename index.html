@@ -119,10 +119,10 @@
     position:sticky; top:52px; z-index:10;
     background:var(--paper); border-bottom:1px solid var(--line);
   }
-  .mapview{max-width:640px; margin:0 auto; padding:10px 20px 12px;}
+  .mapview{max-width:640px; margin:0 auto; padding:0;}
   .mapcanvas{
-    position:relative; height:260px; border-radius:14px; overflow:hidden;
-    background:var(--paper-2); border:1px solid var(--line);
+    position:relative; height:260px; overflow:hidden;
+    background:var(--paper-2); border-top:1px solid var(--line);
   }
   .mapbase{display:block; width:100%; height:100%;}
   .map-land{fill:color-mix(in srgb, var(--moss) 12%, transparent);}
@@ -132,22 +132,24 @@
   }
   .map-river{fill:none; stroke:var(--river); stroke-width:4; stroke-linecap:round; opacity:.5;}
   .map-label{fill:var(--ink-soft); font-size:11px; font-family:'Noto Sans KR',sans-serif;}
+  /* One pin per record: its photo or the author's initial, the mood they
+     tagged, and what they wrote. */
   .map-pin{cursor:pointer;}
-  .map-pin .pin-ring{fill:var(--card); stroke:var(--line); stroke-width:1.5;}
-  .map-pin.on .pin-ring{stroke:var(--cta); stroke-width:3;}
+  .map-pin .pin-ring{fill:var(--card); stroke-width:2.5;}
   .map-pin .pin-initial{
-    fill:var(--ink); font-size:13px; font-weight:700; text-anchor:middle;
+    fill:var(--ink); font-size:11px; font-weight:700; text-anchor:middle;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  .map-pin .pin-mood{font-size:11px; text-anchor:middle;}
+  .map-pin .pin-bubble rect{fill:var(--card); stroke:var(--line); stroke-width:1;}
+  .map-pin .pin-bubble text{
+    fill:var(--ink); font-size:9px; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif;
   }
   .map-pin .pin-name{
-    fill:var(--ink); font-size:10px; font-weight:700; text-anchor:middle;
+    fill:var(--ink); font-size:9px; font-weight:700; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
     stroke:var(--paper); stroke-width:3px; stroke-linejoin:round;
-  }
-  .map-pin .pin-badge{fill:var(--cta);}
-  .map-pin .pin-count{
-    fill:var(--cta-ink); font-size:9px; font-weight:700; text-anchor:middle;
-    font-family:'Noto Sans KR',sans-serif;
   }
   .mapnote{
     position:absolute; left:10px; bottom:10px; margin:0;
@@ -1132,7 +1134,9 @@
   // The window the map draws, and where each place really is. Pin positions are
   // computed from these, so a pin lands where the place is rather than where a
   // layout happens to put it.
-  var MAP_BOX = { west:127.30, east:127.90, north:35.25, south:35.02, w:430, h:200 };
+  // Inset from the viewBox edges so a pin's bubble and labels stay on the map.
+  var MAP_BOX = { west:127.30, east:127.90, north:35.25, south:35.02,
+                  x0:24, x1:406, y0:34, y1:176 };
   var PLACE_COORDS = {
     '구례':       [35.202, 127.463],
     '화개장터':   [35.196, 127.647],
@@ -1147,8 +1151,8 @@
     var c = PLACE_COORDS[name];
     if (!c) return null;
     return {
-      x: (c[1] - MAP_BOX.west) / (MAP_BOX.east - MAP_BOX.west) * MAP_BOX.w,
-      y: (MAP_BOX.north - c[0]) / (MAP_BOX.north - MAP_BOX.south) * MAP_BOX.h
+      x: MAP_BOX.x0 + (c[1] - MAP_BOX.west) / (MAP_BOX.east - MAP_BOX.west) * (MAP_BOX.x1 - MAP_BOX.x0),
+      y: MAP_BOX.y0 + (MAP_BOX.north - c[0]) / (MAP_BOX.north - MAP_BOX.south) * (MAP_BOX.y1 - MAP_BOX.y0)
     };
   }
 
@@ -1158,47 +1162,66 @@
     if (!pins) return;
 
     // Every filter except place shapes the map, so choosing a place highlights
-    // one pin instead of hiding the rest.
-    var forMap = filteredEntries(true);
-    var groups = {}, order = [], offRecords = 0, offNames = {};
-    forMap.forEach(function(e){
+    // its records instead of emptying the map.
+    var onMap = [], offRecords = 0, offNames = {};
+    filteredEntries(true).forEach(function(e){
       var name = splitTags(e.location)[0] || '';
-      if (placePoint(name)){
-        if (!groups[name]){ groups[name] = []; order.push(name); }
-        groups[name].push(e);
+      var p = placePoint(name);
+      if (p){
+        onMap.push({ e:e, place:name, p:p });
       } else {
         offRecords++;
         if (name) offNames[name] = true;
       }
     });
 
-    pins.innerHTML = order.map(function(name, i){
-      var p = placePoint(name);
-      var list = groups[name];
+    var marks = onMap.map(function(it, i){
+      var e = it.e;
+      // Records sharing a place fan out a little. The offsets come from the
+      // record's id, so the arrangement holds still between renders.
+      var dx = ((hashInt(e.id + 'x') % 23) - 11) * 0.8;
+      var dy = ((hashInt(e.id + 'y') % 15) - 7) * 0.8;
+      var x = it.p.x + dx, y = it.p.y + dy;
+
       var shot = null;
-      list.forEach(function(e){
-        (e.media || []).forEach(function(m){
-          if (!shot && m && m.url && m.type !== 'video') shot = m;
-        });
+      (e.media || []).forEach(function(m){
+        if (!shot && m && m.url && m.type !== 'video') shot = m;
       });
       var cid = 'pinclip' + i;
       var face = shot
-        ? '<clipPath id="'+cid+'"><circle r="13"/></clipPath>' +
-          '<image href="'+escapeHtml(shot.url)+'" x="-13" y="-13" width="26" height="26" ' +
+        ? '<clipPath id="'+cid+'"><circle r="10.5"/></clipPath>' +
+          '<image href="'+escapeHtml(shot.url)+'" x="-10.5" y="-10.5" width="21" height="21" ' +
             'preserveAspectRatio="xMidYMid slice" clip-path="url(#'+cid+')"/>'
-        : '<text class="pin-initial" y="4.5">'+escapeHtml(name.slice(0,1))+'</text>';
-      var badge = list.length > 1
-        ? '<circle class="pin-badge" cx="11" cy="-11" r="7.5"/>' +
-          '<text class="pin-count" x="11" y="-8">'+list.length+'</text>'
+        : '<text class="pin-initial" y="4">'+escapeHtml(avatarInitial(e.authorName))+'</text>';
+
+      var moods = splitTags(e.mood);
+      var mood = moods.length
+        ? '<text class="pin-mood" x="9.5" y="15">'+moodEmoji(moods[0])+'</text>'
         : '';
-      var on = state.filterLoc === name ? ' on' : '';
-      return '<g class="map-pin'+on+'" data-place="'+escapeHtml(name)+'" ' +
-          'transform="translate('+p.x.toFixed(1)+','+p.y.toFixed(1)+')" ' +
-          'role="button" tabindex="0" aria-label="'+escapeHtml(name)+' 기록 '+list.length+'개">' +
-          '<circle class="pin-ring" r="15"/>' + face + badge +
-          '<text class="pin-name" y="29">'+escapeHtml(name)+'</text>' +
+
+      // SVG text does not ellipsis on its own, so the message is cut to fit.
+      var say = e.text || '';
+      var label = say.length > 11 ? say.slice(0, 11) + '…' : say;
+      var bubble = '';
+      if (label){
+        var w = Math.min(140, label.length * 9.5 + 16);
+        bubble = '<g class="pin-bubble" transform="translate(0,-19)">' +
+            '<rect x="'+(-w / 2).toFixed(1)+'" y="-11" width="'+w.toFixed(1)+'" height="16" rx="8"/>' +
+            '<text y="0.5">'+escapeHtml(label)+'</text>' +
+          '</g>';
+      }
+
+      return '<g class="map-pin" data-open="'+escapeHtml(e.id)+'" ' +
+          'transform="translate('+x.toFixed(1)+','+y.toFixed(1)+')" role="button" tabindex="0" ' +
+          'aria-label="'+escapeHtml(e.authorName + ' · ' + it.place)+'">' +
+          bubble +
+          '<circle class="pin-ring" r="12.5" style="stroke:hsl('+hashHue(e.authorName)+' 45% 62%)"/>' +
+          face + mood +
+          '<text class="pin-name" y="25">'+escapeHtml(e.authorName)+'</text>' +
         '</g>';
     }).join('');
+
+    pins.innerHTML = marks;
 
     var offPlaceCount = Object.keys(offNames).length;
     if (offRecords){
@@ -1210,16 +1233,14 @@
       note.style.display = 'none';
     }
 
-    Array.prototype.forEach.call(pins.querySelectorAll('[data-place]'), function(g){
-      function pick(){
-        var name = g.getAttribute('data-place');
-        // Tapping the pin that is already chosen clears the filter again.
-        state.filterLoc = (state.filterLoc === name) ? 'all' : name;
+    Array.prototype.forEach.call(pins.querySelectorAll('[data-open]'), function(g){
+      function open(){
+        state.detailId = g.getAttribute('data-open');
         render();
       }
-      g.addEventListener('click', pick);
+      g.addEventListener('click', open);
       g.addEventListener('keydown', function(ev){
-        if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); pick(); }
+        if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); open(); }
       });
     });
   }
