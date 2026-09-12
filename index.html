@@ -443,7 +443,7 @@
 <div class="mapwrap" id="mapWrap" style="display:none;">
   <div class="mapview">
     <div class="mapcanvas" id="mapCanvas">
-      <svg class="mapbase" viewBox="0 0 430 343" preserveAspectRatio="xMidYMid meet" role="img" aria-label="구례·하동 채집 지도">
+      <svg class="mapbase" viewBox="0 0 430 390" preserveAspectRatio="xMidYMid meet" role="img" aria-label="구례·하동 채집 지도">
         <g id="mapZoom">
           <path class="map-land" d="M20 110 C60 60 140 44 220 58 C300 44 372 60 412 104 C424 160 410 240 380 300 C300 320 190 316 110 300 C52 272 18 180 20 110 Z"/>
           <path class="map-ridge" d="M150 150 L186 118 L214 140 L248 112 L278 136 L312 114 L346 142 L380 120 L410 148"/>
@@ -1360,7 +1360,7 @@
       }
     });
 
-    var BAND_Y = 302, BAND_X0 = 54, BAND_X1 = 376;
+    var BAND_Y = 350, BAND_X0 = 54, BAND_X1 = 376;
     adrift.forEach(function(it, i){
       var n = adrift.length;
       it.p = {
@@ -1372,8 +1372,8 @@
     });
 
     var band = adrift.length
-      ? '<path class="map-band" d="M40 278 L390 278"/>' +
-        '<text class="map-place" text-anchor="start" x="40" y="270">위치 미정 ' + adrift.length + '</text>'
+      ? '<path class="map-band" d="M40 300 L390 300"/>' +
+        '<text class="map-place" text-anchor="start" x="40" y="294">위치 미정 ' + adrift.length + '</text>'
       : '';
 
     // Named landmarks sit at their own coordinates, so the map reads as this
@@ -1482,17 +1482,17 @@
   function clampMapZoom(){
     mapZoom.s = Math.min(4, Math.max(1, mapZoom.s));
     mapZoom.x = Math.min(0, Math.max(430 - 430 * mapZoom.s, mapZoom.x));
-    mapZoom.y = Math.min(0, Math.max(343 - 343 * mapZoom.s, mapZoom.y));
+    mapZoom.y = Math.min(0, Math.max(390 - 390 * mapZoom.s, mapZoom.y));
   }
   // Screen point -> the SVG's own units, accounting for how "slice" fits and
   // centres the drawing in the box.
   function mapUserPoint(clientX, clientY){
     var svg = document.querySelector('.mapbase');
     var r = svg.getBoundingClientRect();
-    var k = Math.min(r.width / 430, r.height / 343);
+    var k = Math.min(r.width / 430, r.height / 390);
     return {
       x: (clientX - (r.left + (r.width - 430 * k) / 2)) / k,
-      y: (clientY - (r.top + (r.height - 343 * k) / 2)) / k
+      y: (clientY - (r.top + (r.height - 390 * k) / 2)) / k
     };
   }
   function zoomMapAt(clientX, clientY, ratio){
