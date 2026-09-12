@@ -176,20 +176,22 @@
   .map-pin .pin-mood{font-size:17px; text-anchor:middle;}
   .map-pin .pin-bubble rect{fill:var(--card); stroke:var(--line); stroke-width:1;}
   .map-pin .pin-bubble text{
-    fill:var(--ink); font-size:10.3px; text-anchor:middle;
+    fill:var(--ink); font-size:12px; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif;
   }
+  /* Drawn last, over the pins: a place keeps its name even when a pin covers
+     the spot, so the halo has to carry it over whatever is underneath. */
   .map-place{
     fill:var(--ink-soft); font-size:9px;
     font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
-    stroke:var(--paper); stroke-width:3px; stroke-linejoin:round;
+    stroke:var(--paper); stroke-width:4px; stroke-linejoin:round; stroke-opacity:.92;
   }
   .map-dot{fill:var(--ink-soft); opacity:.5;}
   .map-band{
     fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:4 4;
   }
   .map-pin .pin-name{
-    fill:var(--ink); font-size:10.3px; font-weight:700; text-anchor:middle;
+    fill:var(--ink); font-size:12px; font-weight:700; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
     stroke:var(--paper); stroke-width:4px; stroke-linejoin:round;
   }
@@ -290,10 +292,19 @@
   .fab:focus-visible, .pill:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
     outline:2px solid var(--river); outline-offset:2px;
   }
-  .overlay{position:fixed; inset:0; background:rgba(20,24,17,0.5); z-index:50; display:flex; align-items:flex-end; justify-content:center; overflow-x:hidden; max-width:100vw;}
+  /* height:100dvh, not inset:0 alone: on a phone the layout viewport runs under
+     the browser's own bars, and a sheet anchored to that bottom edge pushes its
+     own top off the screen. dvh is the part actually on screen. */
+  .overlay{
+    position:fixed; inset:0; height:100dvh;
+    background:rgba(20,24,17,0.5); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+    overflow-x:hidden; max-width:100vw;
+  }
   @media (min-width:640px){ .overlay{align-items:center;} }
   .sheet{
-    background:var(--surface); width:100%; max-width:520px; border-radius:18px 18px 0 0; max-height:92vh;
+    background:var(--surface); width:100%; max-width:520px; border-radius:18px 18px 0 0;
+    max-height:92vh; max-height:92dvh;
     border:1px solid var(--line); border-bottom:none; box-sizing:border-box;
     display:flex; flex-direction:column; overflow:hidden;
   }
@@ -359,6 +370,8 @@
   .locresult:last-child{border-bottom:none;}
   .locresult-new{color:var(--cta); font-weight:600;}
   .locresult-new small{font-weight:400;}
+  /* A hit that is only an address: it needs a name before it can be a place. */
+  .locresult-addr small{color:var(--river);}
   .locresult small{display:block; font-size:12px; color:var(--ink-soft); margin-top:2px;}
   .lochint{margin:0 0 8px; font-size:12px; color:var(--ink-soft);}
   .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-soft); cursor:pointer;}
@@ -693,6 +706,8 @@
     expandedComments: {},  // entryId -> bool
     commentDrafts: {},     // entryId -> in-progress comment text (survives re-render)
     selectedLocs: [],
+    // Set while an address with no name of its own is waiting to be named.
+    namingAt: null,
     pendingLat: null,
     pendingLng: null,
     selectedMoods: [],
@@ -1301,22 +1316,46 @@
     return Object.keys(PLACE_COORDS)
       .filter(function(n){ return n.indexOf(s) !== -1; })
       .map(function(n){
-        return { name:n, detail:'등록된 명소', lat:PLACE_COORDS[n][0], lng:PLACE_COORDS[n][1] };
+        return { name:n, label:n, detail:'등록된 명소',
+                 lat:PLACE_COORDS[n][0], lng:PLACE_COORDS[n][1] };
       });
+  }
+  // Feature kinds that name a place rather than an address. Anything else that
+  // comes back — a road, a village, a lot — is somewhere to be named.
+  var POI_KINDS = {
+    tourism:1, amenity:1, shop:1, leisure:1, historic:1, natural:1,
+    building:1, man_made:1, craft:1, office:1, aeroway:1, railway:1
+  };
+  // Korean addresses read big to small, the way they are written on an envelope.
+  function addressText(a){
+    if (!a) return '';
+    return [a.province || a.state, a.county || a.city, a.town || a.village || a.suburb || a.city_district,
+            a.road, a.house_number].filter(Boolean).join(' ');
   }
   function searchPlaces(q){
     if (!lookupOnline) return Promise.resolve(localSearch(q));
-    return fetch(NOMINATIM + '/search?format=jsonv2&limit=6&countrycodes=kr' +
+    // addressdetails so a hit that is only an address can still be shown as one.
+    return fetch(NOMINATIM + '/search?format=jsonv2&limit=8&addressdetails=1&countrycodes=kr' +
         '&accept-language=ko&q=' + encodeURIComponent(q))
       .then(function(r){ return r.ok ? r.json() : []; })
       .then(function(list){
-        return (list || []).map(function(d){
-          return {
-            name: (d.name || String(d.display_name || '').split(',')[0]).trim(),
-            detail: d.display_name || '',
+        var seen = {}, out = [];
+        (list || []).forEach(function(d){
+          var named = String(d.name || '').trim();
+          var addr = addressText(d.address) || String(d.display_name || '');
+          var label = named || addr;
+          if (!label || seen[label]) return;
+          seen[label] = true;
+          out.push({
+            name: named, label: label, addr: addr,
+            detail: addr,
+            // A road or a village is where a place is, not the place itself, so
+            // it is offered as an address to be named rather than as a name.
+            needsName: !named || !POI_KINDS[d.category || d.class],
             lat: parseFloat(d.lat), lng: parseFloat(d.lon)
-          };
+          });
         });
+        return out;
       })
       .catch(function(){ lookupOnline = false; return localSearch(q); });
   }
@@ -1328,18 +1367,41 @@
   }
   // Whatever was typed can always be registered as it stands, so a place the
   // search does not know is still one tap away instead of needing its own field.
+  // An address that carries no name of its own is kept aside until the writer
+  // gives it one, so the record says where it was rather than a house number.
+  function startNaming(r){
+    state.namingAt = { lat:r.lat, lng:r.lng, addr:r.addr || r.label };
+    var box = document.getElementById('locSearch');
+    box.value = '';
+    box.placeholder = '이 주소를 뭐라고 부를까요?';
+    setLocHint(state.namingAt.addr + ' — 이름을 지어 등록해주세요.');
+    showLocResults(null);
+    box.focus();
+  }
+  function stopNaming(){
+    state.namingAt = null;
+    document.getElementById('locSearch').placeholder = '장소 검색';
+  }
+
   function showLocResults(list, q){
     var box = document.getElementById('locResults');
     var typed = String(q || '').trim();
-    var rows = (list || []).map(function(r, i){
-      return '<button type="button" class="locresult" data-i="'+i+'">' +
-        escapeHtml(r.name) +
-        (r.detail ? '<small>'+escapeHtml(r.detail)+'</small>' : '') +
+    var naming = state.namingAt;
+    // While naming, the list is that one address and nothing else.
+    var rows = naming ? [] : (list || []).map(function(r, i){
+      return '<button type="button" class="locresult'+(r.needsName ? ' locresult-addr' : '')+'" data-i="'+i+'">' +
+        escapeHtml(r.label || r.name) +
+        (r.needsName
+          ? '<small>주소 · 눌러서 장소 이름 붙이기</small>'
+          : (r.detail ? '<small>'+escapeHtml(r.detail)+'</small>' : '')) +
       '</button>';
     });
     if (typed){
       rows.push('<button type="button" class="locresult locresult-new" data-new="1">' +
-        '‘'+escapeHtml(typed)+'’ 등록<small>찾는 장소가 없으면 이대로 등록해요</small></button>');
+        '‘'+escapeHtml(typed)+'’ 등록<small>' +
+        (naming ? '이 주소를 이 이름으로 저장해요 · ' + escapeHtml(naming.addr)
+                : '찾는 장소가 없으면 이대로 등록해요') +
+        '</small></button>');
     }
     if (!rows.length){ box.innerHTML = ''; box.style.display = 'none'; return; }
     box.innerHTML = rows.join('');
@@ -1347,13 +1409,19 @@
     Array.prototype.forEach.call(box.querySelectorAll('[data-i]'), function(btn){
       btn.addEventListener('click', function(){
         var r = list[parseInt(btn.getAttribute('data-i'), 10)];
+        if (r.needsName){ startNaming(r); return; }
         applyFoundPlace(r.name, r.lat, r.lng, '검색한 위치로 지도에 표시됩니다.');
         showLocResults(null);
       });
     });
     var mk = box.querySelector('[data-new]');
     if (mk) mk.addEventListener('click', function(){
-      applyFoundPlace(typed, null, null, '직접 등록한 장소예요.');
+      if (naming){
+        applyFoundPlace(typed, naming.lat, naming.lng, '주소에 이름을 붙여 등록했어요.');
+        stopNaming();
+      } else {
+        applyFoundPlace(typed, null, null, '직접 등록한 장소예요.');
+      }
       showLocResults(null);
     });
   }
@@ -1373,6 +1441,23 @@
       renderLocChips();
     }
     setLocHint(hint + (name ? '' : ' 장소 이름은 검색해서 등록해주세요.'));
+  }
+
+  // SVG hands out no text metrics until the text is in the document, so a bubble
+  // is drawn on an estimate and then trimmed to what its message really measures.
+  // Long messages still stop at the width the pin has to itself.
+  function fitBubbles(root){
+    Array.prototype.forEach.call(root.querySelectorAll('.pin-bubble'), function(g){
+      var t = g.querySelector('text'), r = g.querySelector('rect');
+      if (!t || !r) return;
+      var tw = 0;
+      try { tw = t.getBBox().width; } catch (err) { return; }
+      if (!tw) return;
+      var max = parseFloat(r.getAttribute('data-max')) || 180;
+      var w = Math.max(30, Math.min(max, tw + 18));
+      r.setAttribute('width', w.toFixed(1));
+      r.setAttribute('x', (-w / 2).toFixed(1));
+    });
   }
 
   function renderMap(){
@@ -1467,8 +1552,8 @@
       // most two lines here and the bubble grows upward to hold them.
       var say = (e.text || '').replace(/\s+/g, ' ').trim();
       // The bubble may not be wider than the room this pin has to itself.
-      var maxW = it.compact ? Math.max(62, Math.min(180, it.slot - 6)) : 180;
-      var cap = Math.max(4, Math.min(10, Math.floor((maxW - 18) / 11)));
+      var maxW = it.compact ? Math.max(70, Math.min(180, it.slot + 8)) : 180;
+      var cap = Math.max(4, Math.min(12, Math.floor((maxW - 18) / 12.6)));
       var lines = [];
       if (say){
         if (say.length <= cap){
@@ -1484,15 +1569,15 @@
         for (var li = 1; li < lines.length; li++){
           if (lines[li].length > longest) longest = lines[li].length;
         }
-        var w = Math.min(maxW, longest * 11 + 18);
-        var extra = (lines.length - 1) * 13;
+        var w = Math.min(maxW, longest * 12.6 + 18);
+        var extra = (lines.length - 1) * 15;
         var tspans = lines.map(function(l, li2){
-          return '<tspan x="0" dy="'+(li2 === 0 ? 0 : 13)+'">'+escapeHtml(l)+'</tspan>';
+          return '<tspan x="0" dy="'+(li2 === 0 ? 0 : 15)+'">'+escapeHtml(l)+'</tspan>';
         }).join('');
-        bubble = '<g class="pin-bubble" transform="translate(0,-31)">' +
-            '<rect x="'+(-w / 2).toFixed(1)+'" y="'+(-13 - extra)+'" ' +
-              'width="'+w.toFixed(1)+'" height="'+(19 + extra)+'" rx="9"/>' +
-            '<text y="'+(0.5 - extra)+'">'+tspans+'</text>' +
+        bubble = '<g class="pin-bubble" transform="translate(0,-33)">' +
+            '<rect data-max="'+maxW.toFixed(1)+'" x="'+(-w / 2).toFixed(1)+'" y="'+(-15 - extra)+'" ' +
+              'width="'+w.toFixed(1)+'" height="'+(23 + extra)+'" rx="10"/>' +
+            '<text y="'+(0.6 - extra)+'">'+tspans+'</text>' +
           '</g>';
       }
 
@@ -1510,7 +1595,9 @@
         '</g>';
     }).join('');
 
-    pins.innerHTML = landmarks + band + marks;
+    // Names last, so a pin sitting on a place never hides what the place is.
+    pins.innerHTML = band + marks + landmarks;
+    fitBubbles(pins);
     applyMapZoom();
 
     Array.prototype.forEach.call(pins.querySelectorAll('[data-open]'), function(g){
@@ -1991,6 +2078,7 @@
     state.selectedMoods = [];
     state.pendingLat = null;
     state.pendingLng = null;
+    stopNaming();
     setLocHint('');
     showLocResults(null);
     document.getElementById('locSearch').value = '';
@@ -2047,6 +2135,7 @@
         e.preventDefault();
         var v = b.getAttribute('data-loc');
         var on = state.selectedLocs.indexOf(v) !== -1;
+        stopNaming();
         state.selectedLocs = on ? [] : [v];
         document.getElementById('locSearch').value = on ? '' : v;
         showLocResults(null);
@@ -2159,6 +2248,8 @@
       if (!q){ showLocResults(null); return; }
       // The register row is there from the first letter; matches join it later.
       showLocResults(null, q);
+      // While naming an address, the typing is the name, not a new search.
+      if (state.namingAt) return;
       if (q.length < 2) return;
       searchTimer = setTimeout(function(){ runLocSearch(q, false); }, 500);
     });
@@ -2168,6 +2259,7 @@
       clearTimeout(searchTimer);
       if (!q){ showLocResults(null); searchBox.focus(); return; }
       showLocResults(null, q);
+      if (state.namingAt) return;
       setLocHint('장소를 찾는 중이에요…');
       runLocSearch(q, true);
     }
