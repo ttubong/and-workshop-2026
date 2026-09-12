@@ -163,16 +163,18 @@
   .map-label{fill:var(--ink-soft); font-size:11px; font-family:'Noto Sans KR',sans-serif;}
   /* One pin per record: its photo or the author's initial, the mood they
      tagged, and what they wrote. */
+  /* Sizes are in the map's own units; the drawing is shown at 0.872, so a 46
+     unit ring reads as a 40px pin on screen and 10.3 unit text as 9px. */
   .map-pin{cursor:pointer;}
-  .map-pin .pin-ring{fill:var(--card); stroke-width:2.5;}
+  .map-pin .pin-ring{fill:var(--card); stroke-width:4;}
   .map-pin .pin-initial{
-    fill:var(--ink); font-size:11px; font-weight:700; text-anchor:middle;
+    fill:var(--ink); font-size:20px; font-weight:700; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif;
   }
-  .map-pin .pin-mood{font-size:11px; text-anchor:middle;}
+  .map-pin .pin-mood{font-size:17px; text-anchor:middle;}
   .map-pin .pin-bubble rect{fill:var(--card); stroke:var(--line); stroke-width:1;}
   .map-pin .pin-bubble text{
-    fill:var(--ink); font-size:9px; text-anchor:middle;
+    fill:var(--ink); font-size:10.3px; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif;
   }
   .map-place{
@@ -185,9 +187,9 @@
     fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:4 4;
   }
   .map-pin .pin-name{
-    fill:var(--ink); font-size:9px; font-weight:700; text-anchor:middle;
+    fill:var(--ink); font-size:10.3px; font-weight:700; text-anchor:middle;
     font-family:'Noto Sans KR',sans-serif; paint-order:stroke;
-    stroke:var(--paper); stroke-width:3px; stroke-linejoin:round;
+    stroke:var(--paper); stroke-width:4px; stroke-linejoin:round;
   }
   .mapempty{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -1409,6 +1411,7 @@
     });
 
     var BAND_Y = 350, BAND_X0 = 54, BAND_X1 = 376;
+    var slot = adrift.length > 1 ? (BAND_X1 - BAND_X0) / (adrift.length - 1) : 180;
     adrift.forEach(function(it, i){
       var n = adrift.length;
       it.p = {
@@ -1417,6 +1420,7 @@
         y: BAND_Y
       };
       it.compact = true;
+      it.slot = slot;
     });
 
     var band = adrift.length
@@ -1452,20 +1456,22 @@
       });
       var cid = 'pinclip' + i;
       var face = shot
-        ? '<clipPath id="'+cid+'"><circle r="10.5"/></clipPath>' +
-          '<image href="'+escapeHtml(shot.url)+'" x="-10.5" y="-10.5" width="21" height="21" ' +
+        ? '<clipPath id="'+cid+'"><circle r="19"/></clipPath>' +
+          '<image href="'+escapeHtml(shot.url)+'" x="-19" y="-19" width="38" height="38" ' +
             'preserveAspectRatio="xMidYMid slice" clip-path="url(#'+cid+')"/>'
-        : '<text class="pin-initial" y="4">'+escapeHtml(avatarInitial(e.authorName))+'</text>';
+        : '<text class="pin-initial" y="7">'+escapeHtml(avatarInitial(e.authorName))+'</text>';
 
       var moods = splitTags(e.mood);
       var mood = moods.length
-        ? '<text class="pin-mood" x="9.5" y="15">'+moodEmoji(moods[0])+'</text>'
+        ? '<text class="pin-mood" x="17.5" y="28">'+moodEmoji(moods[0])+'</text>'
         : '';
 
       // SVG text neither wraps nor ellipsises, so the message is split into at
       // most two lines here and the bubble grows upward to hold them.
       var say = (e.text || '').replace(/\s+/g, ' ').trim();
-      var cap = it.compact ? 7 : 10;
+      // The bubble may not be wider than the room this pin has to itself.
+      var maxW = it.compact ? Math.max(62, Math.min(180, it.slot - 6)) : 180;
+      var cap = Math.max(4, Math.min(10, Math.floor((maxW - 18) / 11)));
       var lines = [];
       if (say){
         if (say.length <= cap){
@@ -1481,14 +1487,14 @@
         for (var li = 1; li < lines.length; li++){
           if (lines[li].length > longest) longest = lines[li].length;
         }
-        var w = Math.min(150, longest * 9.5 + 16);
-        var extra = (lines.length - 1) * 11;
+        var w = Math.min(maxW, longest * 11 + 18);
+        var extra = (lines.length - 1) * 13;
         var tspans = lines.map(function(l, li2){
-          return '<tspan x="0" dy="'+(li2 === 0 ? 0 : 11)+'">'+escapeHtml(l)+'</tspan>';
+          return '<tspan x="0" dy="'+(li2 === 0 ? 0 : 13)+'">'+escapeHtml(l)+'</tspan>';
         }).join('');
-        bubble = '<g class="pin-bubble" transform="translate(0,-19)">' +
-            '<rect x="'+(-w / 2).toFixed(1)+'" y="'+(-11 - extra)+'" ' +
-              'width="'+w.toFixed(1)+'" height="'+(16 + extra)+'" rx="8"/>' +
+        bubble = '<g class="pin-bubble" transform="translate(0,-31)">' +
+            '<rect x="'+(-w / 2).toFixed(1)+'" y="'+(-13 - extra)+'" ' +
+              'width="'+w.toFixed(1)+'" height="'+(19 + extra)+'" rx="9"/>' +
             '<text y="'+(0.5 - extra)+'">'+tspans+'</text>' +
           '</g>';
       }
@@ -1500,9 +1506,9 @@
           'aria-label="'+escapeHtml(e.authorName + ' · ' + it.place)+'">' +
           '<g class="pin-scale">' +
             bubble +
-            '<circle class="pin-ring" r="12.5" style="stroke:hsl('+hashHue(e.authorName)+' 45% 62%)"/>' +
+            '<circle class="pin-ring" r="23" style="stroke:hsl('+hashHue(e.authorName)+' 45% 62%)"/>' +
             face + mood +
-            '<text class="pin-name" y="25">'+escapeHtml(e.authorName)+'</text>' +
+            '<text class="pin-name" y="36">'+escapeHtml(e.authorName)+'</text>' +
           '</g>' +
         '</g>';
     }).join('');
