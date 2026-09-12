@@ -344,13 +344,18 @@
   .chip.added.on{background:var(--river); border-color:var(--river); border-style:solid; color:#fff;}
   .loctools{display:flex; gap:6px; margin:0 0 8px;}
   .locsearch{position:relative; flex:1 1 auto; min-width:0;}
+  /* Room for the magnifier, and for the clear button once there is something
+     to clear. */
   .locsearch input{padding-right:40px;}
-  .locsearch-go{
-    position:absolute; right:1px; top:1px; bottom:1px; width:38px;
+  .locsearch.filled input{padding-right:70px;}
+  .locsearch-go, .locsearch-clear{
+    position:absolute; top:1px; bottom:1px; width:38px;
     display:flex; align-items:center; justify-content:center;
     border:none; background:none; color:var(--ink-soft);
-    border-radius:0 8px 8px 0; cursor:pointer; padding:0;
+    cursor:pointer; padding:0;
   }
+  .locsearch-go{right:1px; border-radius:0 8px 8px 0;}
+  .locsearch-clear{right:40px; width:30px;}
   .locbtn{
     flex:0 0 auto; display:flex; align-items:center; gap:5px;
     border:1px solid var(--line); background:var(--card); color:var(--ink);
@@ -538,6 +543,7 @@
           <button type="button" class="locbtn" id="locHere"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>현재 위치</button>
           <div class="locsearch">
             <input type="text" id="locSearch" placeholder="장소 검색" autocomplete="off">
+            <button type="button" class="locsearch-clear" id="locClear" aria-label="장소 지우기" hidden><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
             <button type="button" class="locsearch-go" id="locGo" aria-label="장소 검색"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
           </div>
         </div>
@@ -1360,6 +1366,15 @@
       .catch(function(){ lookupOnline = false; return localSearch(q); });
   }
 
+  // The clear button only exists while there is something in the box.
+  function syncLocClear(){
+    var box = document.getElementById('locSearch');
+    var btn = document.getElementById('locClear');
+    if (!box || !btn) return;
+    var has = !!box.value;
+    btn.hidden = !has;
+    box.parentNode.classList.toggle('filled', has);
+  }
   function setLocHint(msg){
     var el = document.getElementById('locHint');
     el.textContent = msg || '';
@@ -1373,6 +1388,7 @@
     state.namingAt = { lat:r.lat, lng:r.lng, addr:r.addr || r.label };
     var box = document.getElementById('locSearch');
     box.value = '';
+    syncLocClear();
     box.placeholder = '이 주소를 뭐라고 부를까요?';
     setLocHint(state.namingAt.addr + ' — 이름을 지어 등록해주세요.');
     showLocResults(null);
@@ -1438,6 +1454,7 @@
       // The box holds the place that is set, so the field still reads as the
       // chosen place after the results list closes.
       document.getElementById('locSearch').value = name;
+      syncLocClear();
       renderLocChips();
     }
     setLocHint(hint + (name ? '' : ' 장소 이름은 검색해서 등록해주세요.'));
@@ -2082,6 +2099,7 @@
     setLocHint('');
     showLocResults(null);
     document.getElementById('locSearch').value = '';
+    syncLocClear();
     renderLocChips();
     renderMoodChips();
     renderThumbs();
@@ -2138,6 +2156,7 @@
         stopNaming();
         state.selectedLocs = on ? [] : [v];
         document.getElementById('locSearch').value = on ? '' : v;
+        syncLocClear();
         showLocResults(null);
         // A preset carries its own position; an added place brings back the one
         // it was first saved with, so it lands on the same spot as before.
@@ -2244,6 +2263,7 @@
     }
     searchBox.addEventListener('input', function(){
       var q = searchBox.value.trim();
+      syncLocClear();
       clearTimeout(searchTimer);
       if (!q){ showLocResults(null); return; }
       // The register row is there from the first letter; matches join it later.
@@ -2266,6 +2286,21 @@
     document.getElementById('locGo').addEventListener('click', function(e){
       e.preventDefault();
       searchNow();
+    });
+    // Clearing the box clears the place with it: the field is what says which
+    // place the record is getting, so leaving a chosen place behind would lie.
+    document.getElementById('locClear').addEventListener('click', function(e){
+      e.preventDefault();
+      searchBox.value = '';
+      syncLocClear();
+      stopNaming();
+      state.selectedLocs = [];
+      state.pendingLat = null;
+      state.pendingLng = null;
+      renderLocChips();
+      showLocResults(null);
+      setLocHint('');
+      searchBox.focus();
     });
     searchBox.addEventListener('keydown', function(e){
       if (e.key !== 'Enter') return;
