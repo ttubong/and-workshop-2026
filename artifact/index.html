@@ -7,6 +7,9 @@
     --card:#fafbfc;
     /* Sheets and popups sit on their own surface, above the page's grey. */
     --surface:#ffffff;
+    /* Water on the map, kept apart from --river (a UI colour that happens to
+       share the name). */
+    --water:#4ea3dd;
     --ink:#23272b;
     --ink-soft:#636b73;
     --line:#d6dade;
@@ -24,13 +27,13 @@
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --paper:#1a1d20; --paper-2:#22262a; --card:#262b2f; --surface:#22262a; --ink:#e6e9ec; --ink-soft:#a2a9b0;
+      --paper:#1a1d20; --paper-2:#22262a; --card:#262b2f; --surface:#22262a; --water:#5fb0e5; --ink:#e6e9ec; --ink-soft:#a2a9b0;
       --line:#373d42; --accent:#e2895a; --accent-ink:#241207; --cta:#33518a; --cta-ink:#ffffff; --moss:#8cb483; --river:#8cb6bc;
       --shadow:rgba(0,0,0,0.5); --avatar-l:30%; --avatar-l2:88%;
     }
   }
   :root[data-theme="dark"]{
-    --paper:#1a1d20; --paper-2:#22262a; --card:#262b2f; --surface:#22262a; --ink:#e6e9ec; --ink-soft:#a2a9b0;
+    --paper:#1a1d20; --paper-2:#22262a; --card:#262b2f; --surface:#22262a; --water:#5fb0e5; --ink:#e6e9ec; --ink-soft:#a2a9b0;
     --line:#373d42; --accent:#e2895a; --accent-ink:#241207; --cta:#33518a; --cta-ink:#ffffff; --moss:#8cb483; --river:#8cb6bc;
     --shadow:rgba(0,0,0,0.5); --avatar-l:30%; --avatar-l2:88%;
   }
@@ -148,12 +151,17 @@
     display:block; position:absolute; left:0; top:50%;
     transform:translateY(-50%); width:100%; height:340px;
   }
-  .map-land{fill:color-mix(in srgb, var(--moss) 12%, transparent);}
+  /* Two counties, each outlined, so the line between 구례 and 하동 shows. */
+  .map-land{
+    fill:color-mix(in srgb, var(--moss) 12%, transparent);
+    stroke:color-mix(in srgb, var(--moss) 32%, transparent);
+    stroke-width:0.8; stroke-linejoin:round;
+  }
   .map-ridge{
     fill:none; stroke:color-mix(in srgb, var(--moss) 45%, transparent);
     stroke-width:2; stroke-linejoin:round; stroke-linecap:round;
   }
-  .map-river{fill:none; stroke:var(--river); stroke-width:4; stroke-linecap:round; opacity:.5;}
+  .map-river{fill:none; stroke:var(--water); stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; opacity:.9;}
   .map-label{fill:var(--ink-soft); font-size:11px; font-family:'Noto Sans KR',sans-serif;}
   /* One pin per record: its photo or the author's initial, the mood they
      tagged, and what they wrote. */
@@ -451,11 +459,15 @@
     <div class="mapcanvas" id="mapCanvas">
       <svg class="mapbase" viewBox="0 0 430 390" preserveAspectRatio="xMidYMid meet" role="img" aria-label="구례·하동 채집 지도">
         <g id="mapZoom">
-          <path class="map-land" d="M20 110 C60 60 140 44 220 58 C300 44 372 60 412 104 C424 160 410 240 380 300 C300 320 190 316 110 300 C52 272 18 180 20 110 Z"/>
-          <path class="map-ridge" d="M150 150 L186 118 L214 140 L248 112 L278 136 L312 114 L346 142 L380 120 L410 148"/>
-          <path class="map-river" d="M40 120 C90 150 150 168 214 168 C236 168 250 170 258 182 C272 214 288 242 312 258 C344 282 376 300 414 312"/>
-          <text class="map-label" x="286" y="104">지리산</text>
-          <text class="map-label" x="150" y="188">섬진강</text>
+          <!-- The two counties, the river and the ridge are traced from real data:
+               county outlines from the 2018 KOSTAT boundaries, the 섬진강 course from
+               OpenStreetMap, the 지리산 main ridge from its peaks. Everything is drawn
+               with the same projection the pins use, at one scale in both directions. -->
+          <path class="map-land" d="M127.4 24.7 L133.0 28.2 L141.0 28.2 L152.0 36.2 L155.2 41.5 L159.9 42.5 L160.7 46.0 L173.3 51.9 L178.0 57.7 L177.9 65.9 L181.2 68.3 L186.9 82.0 L194.0 85.7 L196.5 92.6 L195.3 97.8 L198.4 101.5 L199.4 108.0 L199.2 115.1 L197.3 118.6 L199.5 127.6 L197.9 128.1 L201.1 133.1 L192.7 146.0 L190.9 154.4 L192.4 157.2 L191.0 171.3 L186.5 169.2 L181.1 171.0 L171.3 177.4 L169.1 185.1 L160.8 182.6 L157.3 179.6 L155.7 174.9 L153.2 174.0 L149.2 167.0 L141.6 167.8 L138.1 165.9 L139.1 162.4 L130.9 151.2 L126.6 149.5 L123.8 145.9 L113.3 141.4 L108.4 135.5 L99.4 129.5 L85.2 129.6 L81.1 127.8 L77.4 119.1 L78.7 113.2 L74.9 108.0 L75.4 105.7 L80.0 107.5 L86.3 100.5 L90.0 100.5 L92.4 97.9 L85.8 75.8 L81.5 73.5 L84.4 64.2 L83.5 61.5 L87.5 58.6 L87.5 55.4 L95.4 46.5 L101.6 32.6 L106.2 28.3 L111.3 24.9 L112.5 26.6 L117.4 26.7 L119.6 25.1 L127.4 24.7 Z"/>
+          <path class="map-land" d="M207.7 47.8 L217.5 45.8 L220.7 50.7 L231.0 50.0 L232.5 51.5 L232.4 66.5 L234.4 70.3 L233.2 72.8 L238.1 78.1 L240.3 84.0 L259.3 90.9 L262.8 94.7 L264.6 102.0 L275.2 111.1 L298.8 109.5 L304.3 105.0 L308.1 106.2 L310.1 101.5 L315.3 97.3 L314.8 93.5 L320.6 86.9 L324.0 88.5 L323.4 92.3 L332.6 92.6 L330.0 100.2 L331.2 106.1 L330.0 111.7 L333.2 118.0 L333.4 124.5 L340.0 132.1 L348.1 135.6 L355.1 143.0 L354.8 151.0 L351.3 152.9 L350.6 155.7 L346.4 152.3 L342.3 151.9 L340.7 153.5 L335.2 148.5 L325.6 155.1 L328.8 164.2 L341.1 170.0 L335.6 178.0 L340.5 183.5 L336.8 185.2 L337.0 189.8 L332.8 190.4 L334.8 194.8 L339.0 195.0 L340.0 198.2 L341.7 198.2 L343.0 203.5 L345.9 203.8 L351.2 213.6 L347.6 217.1 L348.2 224.4 L346.0 228.2 L347.2 232.7 L345.1 235.8 L346.8 239.0 L344.0 243.8 L345.6 246.0 L343.0 246.5 L344.6 248.5 L347.4 248.5 L344.3 248.9 L345.1 253.2 L342.8 251.0 L339.6 252.2 L341.7 258.5 L341.0 259.6 L340.4 257.4 L336.7 258.7 L334.2 268.3 L333.2 267.2 L330.5 268.6 L329.4 271.0 L328.5 268.2 L327.2 272.2 L323.5 273.3 L314.2 272.3 L310.4 273.7 L308.6 270.4 L309.3 266.7 L306.9 264.2 L306.5 267.8 L305.4 266.2 L303.7 266.8 L305.9 268.3 L305.5 272.3 L299.3 270.7 L297.9 268.5 L301.2 273.1 L297.7 274.4 L294.5 272.5 L296.2 276.6 L288.4 280.9 L289.7 287.2 L287.0 288.0 L289.7 287.3 L288.6 282.5 L284.6 283.5 L282.0 276.3 L277.9 275.6 L273.9 268.9 L272.3 261.7 L267.1 261.9 L269.3 256.0 L277.3 248.2 L280.5 235.5 L279.7 229.9 L273.1 221.9 L270.0 210.1 L259.2 205.7 L255.8 198.1 L245.9 192.2 L236.6 181.3 L235.4 167.5 L232.4 161.4 L218.1 147.2 L212.7 146.3 L200.1 131.7 L197.9 128.1 L199.5 127.6 L197.3 118.6 L199.2 115.1 L199.4 108.0 L198.4 101.5 L195.3 97.8 L196.5 92.6 L194.0 85.7 L186.9 82.0 L181.2 68.3 L177.9 65.9 L177.7 58.0 L182.0 57.5 L191.4 52.0 L196.4 44.7 L199.2 43.6 L207.7 47.8 Z M302.3 278.2 L303.8 278.7 L303.7 285.2 L300.9 284.1 L302.3 278.2 Z"/>
+          <path class="map-river" d="M75.5 97.3 L77.2 102.3 L74.9 108.1 L78.5 112.4 L77.3 118.7 L80.4 127.0 L84.4 129.3 L92.4 128.2 L102.0 131.0 L120.2 145.2 L122.0 144.8 L124.1 140.8 L125.2 126.7 L130.9 121.7 L136.3 121.9 L138.9 124.8 L149.6 130.6 L154.1 131.3 L160.1 128.1 L167.4 129.1 L171.3 125.3 L184.1 121.4 L193.2 124.1 L199.3 129.5 L205.1 137.8 L208.4 139.6 L212.1 146.2 L217.5 146.8 L226.1 153.9 L235.6 165.2 L236.2 172.5 L234.2 176.2 L235.4 180.5 L241.6 184.4 L246.0 192.9 L256.5 197.0 L258.2 205.7 L270.0 209.7 L273.0 223.0 L278.9 229.6 L280.0 236.0 L279.1 240.1 L275.6 249.5 L268.5 257.1 L267.7 261.9 L273.0 271.8 L273.2 282.9 L278.1 287.9"/>
+          <path class="map-ridge" d="M155.8 66.7 L174.1 53.2 L195.2 46.3 L195.5 44.3 L210.3 54.1 L252.9 40.9"/>
+          <text class="map-label" x="212" y="44">지리산</text>
           <g id="mapPins"></g>
         </g>
       </svg>
@@ -1178,32 +1190,43 @@
   // computed from these, so a pin lands where the place is rather than where a
   // layout happens to put it.
   // Inset from the viewBox edges so a pin's bubble and labels stay on the map.
-  var MAP_BOX = { west:127.28, east:127.92, north:35.40, south:34.98,
-                  x0:24, x1:406, y0:30, y1:313 };
+  // The drawn map's own frame: the two counties' real extent, projected into the
+  // viewBox at one scale in both directions. Pins use the same numbers, so a
+  // place lands on the county it belongs to.
+  var MAP_BOX = { west:127.3669, east:127.9393, north:35.3653, south:34.9230,
+                  x0:75, x1:355, y0:24, y1:288 };
+  // Geocoded, then each one checked to fall inside the county it belongs to.
   var PLACE_COORDS = {
-    '구례':       [35.202, 127.463],
-    '화엄사':     [35.230, 127.492],
-    '사성암':     [35.187, 127.471],
-    '산수유마을': [35.290, 127.533],
-    '노고단':     [35.280, 127.549],
-    '섬진강':     [35.130, 127.620],
-    '화개장터':   [35.196, 127.647],
-    '십리벚꽃길': [35.212, 127.650],
-    '쌍계사':     [35.235, 127.653],
-    '최참판댁':   [35.086, 127.685],
-    '악양':       [35.093, 127.702],
-    '하동':       [35.067, 127.751],
-    '하동송림':   [35.068, 127.747],
-    '재첩국거리': [35.062, 127.759]
+    '구례':       [35.2025, 127.4628],
+    '화엄사':     [35.2573, 127.4974],
+    '사성암':     [35.1834, 127.4805],
+    '산수유마을': [35.3127, 127.4349],
+    '노고단':     [35.2937, 127.5321],
+    '섬진강':     [35.1993, 127.5766],
+    '화개장터':   [35.1884, 127.6243],
+    '십리벚꽃길': [35.2105, 127.6372],
+    '쌍계사':     [35.2326, 127.6501],
+    '최참판댁':   [35.1556, 127.6881],
+    '악양':       [35.1622, 127.7094],
+    '하동':       [35.0673, 127.7513],
+    '하동송림':   [35.0622, 127.7445],
+    '재첩국거리': [35.0689, 127.7408]
   };
+  // Named on the map so the valley reads as itself before any record arrives.
+  // Places that sit on top of one another (십리벚꽃길 between 화개장터 and 쌍계사,
+  // 하동송림 and 재첩국거리 beside 하동읍) are left to their pins.
   var LANDMARKS = [
-    { name:'구례',       dx:-20, dy:4,   anchor:'end'    },
-    { name:'쌍계사',     dx:0,   dy:-11, anchor:'middle' },
-    { name:'화개장터',   dx:0,   dy:14,  anchor:'middle' },
+    { name:'산수유마을', dx:0,   dy:-10, anchor:'middle' },
+    { name:'노고단',     dx:0,   dy:-10, anchor:'middle' },
+    { name:'화엄사',     dx:-9,  dy:0,   anchor:'end'    },
+    { name:'구례',       dx:-9,  dy:0,   anchor:'end'    },
+    { name:'사성암',     dx:0,   dy:14,  anchor:'middle' },
+    { name:'섬진강',     dx:0,   dy:15,  anchor:'middle' },
+    { name:'쌍계사',     dx:9,   dy:0,   anchor:'start'  },
+    { name:'화개장터',   dx:0,   dy:15,  anchor:'middle' },
     { name:'최참판댁',   dx:0,   dy:15,  anchor:'middle' },
-    { name:'악양',       dx:26,  dy:-4,  anchor:'start'  },
-    { name:'하동',       dx:-12, dy:18,  anchor:'middle' },
-    { name:'재첩국거리', dx:16,  dy:5,   anchor:'start'  }
+    { name:'악양',       dx:9,   dy:-4,  anchor:'start'  },
+    { name:'하동',       dx:11,  dy:4,   anchor:'start'  }
   ];
 
   // A record saved with its own coordinates pins exactly there, as long as the
