@@ -662,7 +662,12 @@
     {key:'09-16', label:'2일 차', short:'D2', cls:'d2'},
     {key:'09-17', label:'3일 차', short:'D3', cls:'d3'}
   ];
-  var LOC_PRESETS = ['구례','하동','화개장터','쌍계사','최참판댁','악양','섬진강','재첩국거리','빵집','밤나무길','바베큐 자리','닭구이집','숙소'];
+  // The two counties first, then the landmarks people actually name in each.
+  var LOC_PRESETS = [
+    '구례', '하동',
+    '화엄사', '사성암', '산수유마을', '노고단', '섬진강',
+    '화개장터', '십리벚꽃길', '쌍계사', '최참판댁', '하동송림', '재첩국거리'
+  ];
   var MOOD_PRESETS = ['설렘','행복','평온','신남','뭉클','힐링','웃음 터짐','뿌듯함','피곤함','아쉬움','놀라움','그리움'];
   var MOOD_EMOJI = {
     '설렘':'💓', '행복':'😊', '평온':'😌', '신남':'🤩', '뭉클':'🥹', '힐링':'🧘',
@@ -1214,12 +1219,18 @@
                   x0:24, x1:406, y0:30, y1:313 };
   var PLACE_COORDS = {
     '구례':       [35.202, 127.463],
-    '화개장터':   [35.196, 127.647],
-    '쌍계사':     [35.235, 127.653],
+    '화엄사':     [35.230, 127.492],
+    '사성암':     [35.187, 127.471],
+    '산수유마을': [35.290, 127.533],
+    '노고단':     [35.280, 127.549],
     '섬진강':     [35.130, 127.620],
+    '화개장터':   [35.196, 127.647],
+    '십리벚꽃길': [35.212, 127.650],
+    '쌍계사':     [35.235, 127.653],
     '최참판댁':   [35.086, 127.685],
     '악양':       [35.093, 127.702],
     '하동':       [35.067, 127.751],
+    '하동송림':   [35.068, 127.747],
     '재첩국거리': [35.062, 127.759]
   };
   var LANDMARKS = [
@@ -1339,21 +1350,17 @@
     if (!rows.length){ box.innerHTML = ''; box.style.display = 'none'; return; }
     box.innerHTML = rows.join('');
     box.style.display = '';
-    function clearSearch(){
-      document.getElementById('locSearch').value = '';
-      showLocResults(null);
-    }
     Array.prototype.forEach.call(box.querySelectorAll('[data-i]'), function(btn){
       btn.addEventListener('click', function(){
         var r = list[parseInt(btn.getAttribute('data-i'), 10)];
         applyFoundPlace(r.name, r.lat, r.lng, '검색한 위치로 지도에 표시됩니다.');
-        clearSearch();
+        showLocResults(null);
       });
     });
     var mk = box.querySelector('[data-new]');
     if (mk) mk.addEventListener('click', function(){
       applyFoundPlace(typed, null, null, '직접 등록한 장소예요.');
-      clearSearch();
+      showLocResults(null);
     });
   }
 
@@ -1366,6 +1373,9 @@
     state.pendingLng = lng;
     if (name){
       state.selectedLocs = [name];
+      // The box holds the place that is set, so the field still reads as the
+      // chosen place after the results list closes.
+      document.getElementById('locSearch').value = name;
       renderLocChips();
     }
     setLocHint(hint + (name ? '' : ' 장소 이름은 검색해서 등록해주세요.'));
@@ -1996,6 +2006,8 @@
         var v = b.getAttribute('data-loc');
         var on = state.selectedLocs.indexOf(v) !== -1;
         state.selectedLocs = on ? [] : [v];
+        document.getElementById('locSearch').value = on ? '' : v;
+        showLocResults(null);
         // A preset carries its own position, so a searched one's coordinates go.
         state.pendingLat = null;
         state.pendingLng = null;
