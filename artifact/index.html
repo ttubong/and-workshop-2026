@@ -1212,9 +1212,8 @@
     '하동송림':   [35.0622, 127.7445],
     '재첩국거리': [35.0689, 127.7408]
   };
-  // Named on the map so the valley reads as itself before any record arrives.
-  // Places that sit on top of one another (십리벚꽃길 between 화개장터 and 쌍계사,
-  // 하동송림 and 재첩국거리 beside 하동읍) are left to their pins.
+  // Every registered place is named on the map. Order matters: where two names
+  // land on the same spot, the first one here keeps the label.
   var LANDMARKS = [
     { name:'산수유마을', dx:0,   dy:-10, anchor:'middle' },
     { name:'노고단',     dx:0,   dy:-10, anchor:'middle' },
@@ -1223,11 +1222,16 @@
     { name:'사성암',     dx:0,   dy:14,  anchor:'middle' },
     { name:'섬진강',     dx:0,   dy:15,  anchor:'middle' },
     { name:'쌍계사',     dx:9,   dy:0,   anchor:'start'  },
-    { name:'화개장터',   dx:0,   dy:15,  anchor:'middle' },
+    { name:'십리벚꽃길', dx:-9,  dy:3,   anchor:'end'    },
+    { name:'화개장터',   dx:6,   dy:16,  anchor:'start'  },
     { name:'최참판댁',   dx:0,   dy:15,  anchor:'middle' },
     { name:'악양',       dx:9,   dy:-4,  anchor:'start'  },
-    { name:'하동',       dx:11,  dy:4,   anchor:'start'  }
+    { name:'하동',       dx:11,  dy:4,   anchor:'start'  },
+    { name:'하동송림',   dx:-9,  dy:0,   anchor:'end'    },
+    { name:'재첩국거리', dx:0,   dy:16,  anchor:'middle' }
   ];
+  // Two names closer together than this are the same spot on a map this size.
+  var SAME_SPOT = 8;
 
   // A record saved with its own coordinates pins exactly there, as long as the
   // point falls inside the window this map draws.
@@ -1412,13 +1416,18 @@
         '<text class="map-place" text-anchor="start" x="40" y="294">위치 미정 ' + adrift.length + '</text>'
       : '';
 
-    // Named landmarks sit at their own coordinates, so the map reads as this
-    // valley before anything is recorded. Once a place has records its pins take
-    // the spot and the name steps aside.
+    // Every registered place keeps its name on the map, records or not, so the
+    // pins always sit somewhere the reader can name. Names that land on the same
+    // spot — 하동읍, 하동송림 and 재첩국거리 are within a kilometre — would print
+    // on top of each other, so only the first of them is drawn.
+    var taken = [];
     var landmarks = LANDMARKS.map(function(L){
       var lp = placePoint(L.name);
       if (!lp) return '';
-      if (pinned[L.name]) return '';
+      for (var t = 0; t < taken.length; t++){
+        if (Math.hypot(lp.x - taken[t].x, lp.y - taken[t].y) < SAME_SPOT) return '';
+      }
+      taken.push(lp);
       return '<circle class="map-dot" cx="'+lp.x.toFixed(1)+'" cy="'+lp.y.toFixed(1)+'" r="2.5"/>' +
         '<text class="map-place" text-anchor="'+L.anchor+'" ' +
         'x="'+(lp.x + L.dx).toFixed(1)+'" y="'+(lp.y + L.dy).toFixed(1)+'">' +
