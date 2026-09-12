@@ -322,6 +322,14 @@
   .chip{border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:999px; padding:5px 11px; font-size:14px; cursor:pointer; max-width:100%; overflow-wrap:break-word;}
   .chip.on{background:var(--moss); border-color:var(--moss); color:#fff;}
   .loctools{display:flex; gap:6px; margin:0 0 8px;}
+  .locsearch{position:relative; flex:1 1 auto; min-width:0;}
+  .locsearch input{padding-right:40px;}
+  .locsearch-go{
+    position:absolute; right:1px; top:1px; bottom:1px; width:38px;
+    display:flex; align-items:center; justify-content:center;
+    border:none; background:none; color:var(--ink-soft);
+    border-radius:0 8px 8px 0; cursor:pointer; padding:0;
+  }
   .locbtn{
     flex:0 0 auto; display:flex; align-items:center; gap:5px;
     border:1px solid var(--line); background:var(--card); color:var(--ink);
@@ -510,10 +518,13 @@
         <input type="datetime-local" id="fOccurredAt">
       </label>
       <div class="field">
-        <label class="lab" for="locSearch">장소 (여러 개 선택 가능)</label>
+        <label class="lab" for="locSearch">장소</label>
         <div class="loctools">
           <button type="button" class="locbtn" id="locHere"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>현재 위치</button>
-          <input type="text" id="locSearch" placeholder="장소 검색" autocomplete="off">
+          <div class="locsearch">
+            <input type="text" id="locSearch" placeholder="장소 검색" autocomplete="off">
+            <button type="button" class="locsearch-go" id="locGo" aria-label="장소 검색"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+          </div>
         </div>
         <div class="locresults" id="locResults" style="display:none;"></div>
         <p class="lochint" id="locHint" style="display:none;"></p>
@@ -1349,13 +1360,12 @@
   // The text stays the author's to edit; the coordinates ride along separately,
   // so renaming the place later does not throw the position away.
   function applyFoundPlace(name, lat, lng, hint){
-    // A registered name carries no coordinates; keep whatever the map already had.
-    if (lat != null && lng != null){
-      state.pendingLat = lat;
-      state.pendingLng = lng;
-    }
-    if (name && state.selectedLocs.indexOf(name) === -1){
-      state.selectedLocs.push(name);
+    // One place per record: a new one replaces the old, coordinates and all, so
+    // the name and the spot on the map never end up describing different places.
+    state.pendingLat = lat;
+    state.pendingLng = lng;
+    if (name){
+      state.selectedLocs = [name];
       renderLocChips();
     }
     setLocHint(hint + (name ? '' : ' 장소 이름은 검색해서 등록해주세요.'));
@@ -1473,17 +1483,22 @@
           '</g>';
       }
 
+      // The outer group carries the position so the pin rides the land; the
+      // inner one is counter-scaled on zoom so the pin itself stays one size.
       return '<g class="map-pin" data-open="'+escapeHtml(e.id)+'" ' +
           'transform="translate('+x.toFixed(1)+','+y.toFixed(1)+')" role="button" tabindex="0" ' +
           'aria-label="'+escapeHtml(e.authorName + ' · ' + it.place)+'">' +
-          bubble +
-          '<circle class="pin-ring" r="12.5" style="stroke:hsl('+hashHue(e.authorName)+' 45% 62%)"/>' +
-          face + mood +
-          '<text class="pin-name" y="25">'+escapeHtml(e.authorName)+'</text>' +
+          '<g class="pin-scale">' +
+            bubble +
+            '<circle class="pin-ring" r="12.5" style="stroke:hsl('+hashHue(e.authorName)+' 45% 62%)"/>' +
+            face + mood +
+            '<text class="pin-name" y="25">'+escapeHtml(e.authorName)+'</text>' +
+          '</g>' +
         '</g>';
     }).join('');
 
     pins.innerHTML = landmarks + band + marks;
+    applyMapZoom();
 
     Array.prototype.forEach.call(pins.querySelectorAll('[data-open]'), function(g){
       function open(){
@@ -1506,6 +1521,11 @@
     if (g) g.setAttribute('transform',
       'translate(' + mapZoom.x.toFixed(2) + ',' + mapZoom.y.toFixed(2) + ') ' +
       'scale(' + mapZoom.s.toFixed(3) + ')');
+    // Undo the zoom inside each pin: the land grows, the pins keep their size.
+    var inv = 'scale(' + (1 / mapZoom.s).toFixed(4) + ')';
+    Array.prototype.forEach.call(document.querySelectorAll('#mapPins .pin-scale'), function(p){
+      p.setAttribute('transform', inv);
+    });
   }
   function clampMapZoom(){
     mapZoom.s = Math.min(4, Math.max(1, mapZoom.s));
@@ -1968,8 +1988,11 @@
       b.addEventListener('click', function(e){
         e.preventDefault();
         var v = b.getAttribute('data-loc');
-        var idx = state.selectedLocs.indexOf(v);
-        if (idx === -1) state.selectedLocs.push(v); else state.selectedLocs.splice(idx,1);
+        var on = state.selectedLocs.indexOf(v) !== -1;
+        state.selectedLocs = on ? [] : [v];
+        // A preset carries its own position, so a searched one's coordinates go.
+        state.pendingLat = null;
+        state.pendingLng = null;
         renderLocChips();
       });
     });
@@ -2060,6 +2083,14 @@
 
     // Debounced: Nominatim asks for at most one request a second.
     var searchTimer = null;
+    function runLocSearch(q, announce){
+      searchPlaces(q).then(function(list){
+        if (searchBox.value.trim() !== q) return;
+        showLocResults(list, q);
+        if (!announce) return;
+        setLocHint(list && list.length ? '' : '찾은 장소가 없어요. 아래에서 그대로 등록할 수 있어요.');
+      });
+    }
     searchBox.addEventListener('input', function(){
       var q = searchBox.value.trim();
       clearTimeout(searchTimer);
@@ -2067,15 +2098,25 @@
       // The register row is there from the first letter; matches join it later.
       showLocResults(null, q);
       if (q.length < 2) return;
-      searchTimer = setTimeout(function(){
-        searchPlaces(q).then(function(list){
-          if (searchBox.value.trim() !== q) return;
-          showLocResults(list, q);
-        });
-      }, 500);
+      searchTimer = setTimeout(function(){ runLocSearch(q, false); }, 500);
+    });
+    // The magnifier and the enter key do not wait out the debounce.
+    function searchNow(){
+      var q = searchBox.value.trim();
+      clearTimeout(searchTimer);
+      if (!q){ showLocResults(null); searchBox.focus(); return; }
+      showLocResults(null, q);
+      setLocHint('장소를 찾는 중이에요…');
+      runLocSearch(q, true);
+    }
+    document.getElementById('locGo').addEventListener('click', function(e){
+      e.preventDefault();
+      searchNow();
     });
     searchBox.addEventListener('keydown', function(e){
-      if (e.key === 'Enter') e.preventDefault();
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      searchNow();
     });
   })();
 
