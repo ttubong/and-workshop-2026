@@ -1368,16 +1368,34 @@
         ? '<text class="pin-mood" x="9.5" y="15">'+moodEmoji(moods[0])+'</text>'
         : '';
 
-      // SVG text does not ellipsis on its own, so the message is cut to fit.
-      var say = e.text || '';
-      var cap = it.compact ? 5 : 11;
-      var label = say.length > cap ? say.slice(0, cap) + '…' : say;
+      // SVG text neither wraps nor ellipsises, so the message is split into at
+      // most two lines here and the bubble grows upward to hold them.
+      var say = (e.text || '').replace(/\s+/g, ' ').trim();
+      var cap = it.compact ? 7 : 10;
+      var lines = [];
+      if (say){
+        if (say.length <= cap){
+          lines = [say];
+        } else {
+          var rest = say.slice(cap);
+          lines = [say.slice(0, cap), rest.length > cap ? rest.slice(0, cap - 1) + '…' : rest];
+        }
+      }
       var bubble = '';
-      if (label){
-        var w = Math.min(140, label.length * 9.5 + 16);
+      if (lines.length){
+        var longest = lines[0].length;
+        for (var li = 1; li < lines.length; li++){
+          if (lines[li].length > longest) longest = lines[li].length;
+        }
+        var w = Math.min(150, longest * 9.5 + 16);
+        var extra = (lines.length - 1) * 11;
+        var tspans = lines.map(function(l, li2){
+          return '<tspan x="0" dy="'+(li2 === 0 ? 0 : 11)+'">'+escapeHtml(l)+'</tspan>';
+        }).join('');
         bubble = '<g class="pin-bubble" transform="translate(0,-19)">' +
-            '<rect x="'+(-w / 2).toFixed(1)+'" y="-11" width="'+w.toFixed(1)+'" height="16" rx="8"/>' +
-            '<text y="0.5">'+escapeHtml(label)+'</text>' +
+            '<rect x="'+(-w / 2).toFixed(1)+'" y="'+(-11 - extra)+'" ' +
+              'width="'+w.toFixed(1)+'" height="'+(16 + extra)+'" rx="8"/>' +
+            '<text y="'+(0.5 - extra)+'">'+tspans+'</text>' +
           '</g>';
       }
 
