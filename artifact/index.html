@@ -93,11 +93,13 @@
     display:inline-flex; align-items:center; background:none; border:none;
     padding:0; margin:0 2px 0 0; cursor:pointer;
   }
+  /* The circles overlap, but only at the rim: a deeper bite clips the initial
+     of the face underneath and it stops reading as centred. */
   .facepile .avatar{
-    width:24px; height:24px; font-size:11px;
+    width:26px; height:26px; font-size:12px;
     box-shadow:0 0 0 2px var(--paper);
   }
-  .facepile .avatar + .avatar{margin-left:-7px;}
+  .facepile .avatar + .avatar{margin-left:-4px;}
   .facepile .more{
     background:var(--paper-2); color:var(--ink-mid);
     font-family:'Noto Sans KR',sans-serif; font-weight:500;
@@ -105,6 +107,29 @@
   .facepile:empty{display:none;}
   /* A sheet that is really a page: the member list and one member's profile. */
   .sheet.tall{height:90dvh;}
+  /* A full page: no dim around it, no rounded corners, its own top bar. */
+  .overlay.page{align-items:stretch; padding:0; background:var(--surface);}
+  .overlay.page .sheet{
+    max-width:none; width:100%; height:100dvh; max-height:100dvh;
+    border:none; border-radius:0;
+  }
+  .page-nav{
+    position:relative; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    padding:calc(10px + env(safe-area-inset-top, 0px)) 56px 10px;
+  }
+  .page-nav h2{
+    font-family:'Noto Sans KR',sans-serif; font-size:16px; margin:0;
+    text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .page-back{
+    position:absolute; left:12px; top:calc(6px + env(safe-area-inset-top, 0px));
+    width:40px; height:40px; padding:0; border:none; background:none;
+    color:var(--ink); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; border-radius:50%;
+  }
+  .overlay.page .sheet-body{padding-top:6px;}
+  .overlay.page .sheet-body .hint{font-size:14px; color:var(--ink-mid); margin:0 0 4px;}
   .member{
     display:flex; align-items:center; gap:12px; width:100%; text-align:left;
     background:none; border:none; padding:12px 0; cursor:pointer; font:inherit; color:inherit;
@@ -691,16 +716,13 @@
   </div>
 </div>
 
-<div id="membersOverlay" class="overlay" style="display:none;">
-  <div class="sheet tall">
-    <div class="sheet-head">
+<div id="membersOverlay" class="overlay page" style="display:none;">
+  <div class="sheet">
+    <div class="page-nav">
+      <button type="button" class="page-back" id="membersClose" aria-label="뒤로"></button>
       <h2>참여 멤버</h2>
-      <p class="hint" id="membersHint"></p>
     </div>
     <div class="sheet-body" id="membersBody"></div>
-    <div class="sheet-actions">
-      <button class="btn ghost" id="membersClose" style="flex:1;">닫기</button>
-    </div>
   </div>
 </div>
 
@@ -757,6 +779,7 @@
     'x':              '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     'chevron-down':   '<path d="m6 9 6 6 6-6"/>',
     'chevron-right':  '<path d="m9 18 6-6-6-6"/>',
+    'arrow-left':     '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     'calendar':       '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
     'map-pin':        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     'heart':          '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
@@ -1303,10 +1326,10 @@
       return;
     }
 
-    document.getElementById('membersHint').textContent =
-      names.length + '명이 ' + state.entries.length + '개를 채집했어요.';
-
-    body.innerHTML = names.map(function(n){
+    // The summary line lives inside the list so one innerHTML writes both.
+    body.innerHTML =
+      '<p class="hint">'+names.length+'명이 '+state.entries.length+'개를 채집했어요.</p>' +
+      names.map(function(n){
       var s = memberSummary(n);
       return '<button type="button" class="member" data-member="'+escapeHtml(n)+'">' +
         faceHtml(n) +
@@ -2219,6 +2242,7 @@
     state.membersOpen = true;
     render();
   });
+  document.getElementById('membersClose').innerHTML = icon('arrow-left', 22);
   document.getElementById('membersClose').addEventListener('click', closeMembers);
   document.getElementById('membersOverlay').addEventListener('click', function(e){
     if (e.target === e.currentTarget) closeMembers();
