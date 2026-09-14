@@ -18,6 +18,8 @@
        Everything else in the app is grey. */
     --water:#4ea3dd;
     --mountain:#5f8a55;
+    /* A liked heart is the one red in the interface. */
+    --heart:#e0322f;
     /* Text runs on three steps and nothing else -- black for what is being
        read, dark grey for what supports it, light grey for what is only
        glanced at. */
@@ -39,7 +41,7 @@
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --paper:#141414; --paper-2:#1f1f1f; --card:#232323; --surface:#1f1f1f; --water:#5fb0e5; --mountain:#7da872;
+      --paper:#141414; --paper-2:#1f1f1f; --card:#232323; --surface:#1f1f1f; --water:#5fb0e5; --mountain:#7da872; --heart:#ff5a56;
       --ink:#f2f2f2; --ink-mid:#b3b3b3; --ink-soft:#828282;
       --line:#333333; --accent:#e6e6e6; --accent-ink:#141414; --cta:#f2f2f2; --cta-ink:#141414;
       --moss:#dcdcdc; --river:#9b9b9b;
@@ -47,7 +49,7 @@
     }
   }
   :root[data-theme="dark"]{
-    --paper:#141414; --paper-2:#1f1f1f; --card:#232323; --surface:#1f1f1f; --water:#5fb0e5; --mountain:#7da872;
+    --paper:#141414; --paper-2:#1f1f1f; --card:#232323; --surface:#1f1f1f; --water:#5fb0e5; --mountain:#7da872; --heart:#ff5a56;
     --ink:#f2f2f2; --ink-mid:#b3b3b3; --ink-soft:#828282;
     --line:#333333; --accent:#e6e6e6; --accent-ink:#141414; --cta:#f2f2f2; --cta-ink:#141414;
     --moss:#dcdcdc; --river:#9b9b9b;
@@ -92,11 +94,13 @@
     font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
   }
   .subtitle{font-size:14px; color:var(--ink-mid); margin:0 0 12px;}
-  .stats{display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
+  /* The dot belongs to the pair it separates, so it sits close on both sides;
+     the faces keep their own breathing room. */
+  .stats{display:flex; align-items:center; gap:4px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
   /* The people in the room, then the numbers about them. */
   .facepile{
     display:inline-flex; align-items:center; background:none; border:none;
-    padding:0; margin:0 2px 0 0; cursor:pointer;
+    padding:0; margin:0 5px 0 0; cursor:pointer;
   }
   /* The circles overlap, but only at the rim: a deeper bite clips the initial
      of the face underneath and it stops reading as centred. */
@@ -147,7 +151,9 @@
   .member-line{display:block; font-size:14px; color:var(--ink-mid); margin-top:3px;}
   .member-count{display:block; font-size:12px; color:var(--ink-soft); margin-top:3px;}
   .member-go{flex:0 0 auto; color:var(--ink-soft);}
-  .stats span + span::before{content:'·'; opacity:.6; margin-right:8px;}
+  /* Direct children only — a descendant selector also caught the avatars in the
+     facepile and printed a dot inside the circle, shoving the initial right. */
+  .stats > span + span::before{content:'·'; opacity:.6; margin-right:4px;}
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
   .top-actions{flex:0 0 auto; display:flex; align-items:center; gap:8px;}
   /* Same circle as the profile avatar, so the two header controls read as a pair. */
@@ -282,9 +288,8 @@
     background:none; border:none; border-radius:0; padding:0; box-shadow:none;
   }
   .card-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
-  /* Delete sits at the far right of the author row, pulled to the top so it
-     reads on the name's line rather than floating between the two. */
-  .card-head .del{margin-left:auto; align-self:flex-start;}
+  /* Delete sits at the far right of the author row, centred against it. */
+  .card-head .del{margin-left:auto; align-self:center;}
   .avatar{
     width:32px; height:32px; border-radius:50%;
     background:hsl(var(--h,140) 40% var(--avatar-l)); color:hsl(var(--h,140) 55% var(--avatar-l2));
@@ -315,23 +320,43 @@
   .lightbox{
     position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:70;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:14px; padding:28px;
+    gap:14px; padding:28px 0;
   }
+  /* The photo takes the full width it is given; height follows. */
   .lightbox img{
-    max-width:100%; max-height:100%; min-height:0; flex:0 1 auto;
-    border-radius:6px; object-fit:contain;
+    width:100%; max-width:640px; max-height:100%; min-height:0; flex:0 1 auto;
+    object-fit:contain;
   }
   /* Fixed light-on-dark: this scrim is the same in either theme. */
   .lightbox-meta{
-    flex:0 0 auto; width:100%; max-width:520px; max-height:32vh; overflow-y:auto;
-    color:#fff; text-align:center;
+    flex:0 0 auto; width:100%; max-width:640px; max-height:32vh; overflow-y:auto;
+    padding:0 20px; color:#fff; text-align:left;
   }
-  .lb-who{display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px;}
+  .lb-who{display:flex; align-items:center; gap:8px; font-size:14px;}
   .lb-who .mono{color:rgba(255,255,255,.7); font-size:12px;}
   .lb-text{
     font-size:14px; line-height:1.6; margin:6px 0 0; color:rgba(255,255,255,.92);
     white-space:pre-wrap; overflow-wrap:break-word;
   }
+  /* Paging through every photo: arrows for a pointer, a swipe for a thumb, and
+     a row of dots that turns into a count once there are too many to read. */
+  .lb-nav{
+    position:fixed; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.15); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:71; padding:0;
+  }
+  .lb-nav.prev{left:10px;}
+  .lb-nav.next{right:10px;}
+  .lb-nav[hidden]{display:none;}
+  .lb-dots{display:flex; align-items:center; justify-content:center; gap:6px; margin:0 0 10px;}
+  .lb-dots i{
+    width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.35);
+    display:block; flex:0 0 auto;
+  }
+  .lb-dots i.on{background:#fff;}
+  .lb-count{font-size:12px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums;}
   .lightbox-close{
     position:fixed; top:16px; right:16px; width:40px; height:40px; border-radius:50%;
     background:rgba(255,255,255,0.15); color:#fff; border:none; font-size:22px; line-height:1;
@@ -348,7 +373,7 @@
     background:none; border:none; cursor:pointer; padding:2px 0; font-size:14px; color:var(--ink-mid);
     display:flex; align-items:center; gap:5px; font-family:'Noto Sans KR',sans-serif;
   }
-  .like-btn.on{color:var(--accent); font-weight:700;}
+  .like-btn.on{color:var(--heart); font-weight:700;}
   .like-btn.on .ic{fill:currentColor;}
   .card-comments{margin-top:10px;}
   .comment-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
@@ -475,6 +500,16 @@
   .locresult-new small{font-weight:400;}
   /* A hit that is only an address: it needs a name before it can be a place. */
   .locresult-addr small{color:var(--river);}
+  .moodface{font-size:18px; line-height:1; padding:8px 12px;}
+  .emojipick{
+    display:flex; flex-wrap:wrap; gap:4px; margin:0 0 8px; padding:8px;
+    border:1px solid var(--line); border-radius:9px; background:var(--card);
+  }
+  .emojipick button{
+    width:34px; height:34px; font-size:18px; line-height:1; padding:0;
+    border:none; background:none; border-radius:8px; cursor:pointer;
+  }
+  .emojipick button.on{background:var(--paper-2);}
   .locresult small{display:block; font-size:12px; color:var(--ink-mid); margin-top:2px;}
   .lochint{margin:0 0 8px; font-size:12px; color:var(--ink-soft);}
   .filebtn{border:1px dashed var(--line); background:var(--card); border-radius:9px; padding:14px; text-align:center; font-size:14px; color:var(--ink-mid); cursor:pointer;}
@@ -666,11 +701,18 @@
         <p class="lochint" id="locHint" style="display:none;"></p>
         <div class="chiprow" id="locChips"></div>
       </div>
-      <label class="field">
-        <span class="lab">감흥 (여러 개 선택 가능)</span>
-        <input type="text" id="fMood" placeholder="직접 입력은 쉼표로 구분 (예: 설렘, 평온)">
+      <div class="field">
+        <label class="lab" for="moodName">감흥 (여러 개 선택 가능)</label>
+        <div class="loctools">
+          <button type="button" class="locbtn moodface" id="moodFace" aria-label="이모지 고르기">✨</button>
+          <div class="locsearch">
+            <input type="text" id="moodName" placeholder="감흥 직접 추가" autocomplete="off">
+            <button type="button" class="locsearch-go" id="moodAdd" aria-label="감흥 추가"></button>
+          </div>
+        </div>
+        <div class="emojipick" id="moodFaces" style="display:none;"></div>
         <div class="chiprow" id="moodChips"></div>
-      </label>
+      </div>
       <label class="field">
         <span class="lab">기록</span>
         <textarea id="fText" placeholder="무엇을 보고, 먹고, 느꼈나요?"></textarea>
@@ -691,8 +733,13 @@
 
 <div id="lightboxOverlay" class="lightbox" style="display:none;">
   <button class="lightbox-close" id="lightboxClose" aria-label="닫기"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  <button class="lb-nav prev" id="lightboxPrev" aria-label="이전 사진"></button>
+  <button class="lb-nav next" id="lightboxNext" aria-label="다음 사진"></button>
   <img id="lightboxImg" src="" alt="채집 사진 확대보기">
-  <div class="lightbox-meta" id="lightboxMeta"></div>
+  <div class="lightbox-meta" id="lightboxMeta">
+    <div class="lb-dots" id="lightboxDots"></div>
+    <div id="lightboxWho"></div>
+  </div>
 </div>
 
 <div id="deleteConfirmOverlay" class="overlay center" style="display:none;">
@@ -819,7 +866,23 @@
     '설렘':'💓', '행복':'😊', '평온':'😌', '신남':'🤩', '뭉클':'🥹', '힐링':'🧘',
     '웃음 터짐':'😂', '뿌듯함':'🙌', '피곤함':'😩', '아쉬움':'😔', '놀라움':'😲', '그리움':'🥺'
   };
-  function moodEmoji(m){ return MOOD_EMOJI[m] || '✨'; }
+  // A mood the app ships with is just its name. One somebody added carries the
+  // emoji they chose at the front of the tag, so the choice travels with the
+  // record instead of living in a table this build does not have.
+  var MOOD_LEAD = /^(\p{Extended_Pictographic}(?:\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F)?)*)\s*(.+)$/u;
+  function moodParts(tag){
+    var t = String(tag || '').trim();
+    var m = MOOD_LEAD.exec(t);
+    if (m) return { emoji:m[1], name:m[2] };
+    return { emoji: MOOD_EMOJI[t] || '✨', name:t };
+  }
+  function moodEmoji(m){ return moodParts(m).emoji; }
+  function moodLabel(m){ return moodParts(m).name; }
+  var MOOD_FACES = [
+    '💓','😊','😌','🤩','🥹','🧘','😂','🙌','😩','😔','😲','🥺',
+    '✨','🔥','🌊','🌿','🌸','🍂','☀️','🌧️','🌙','⭐','🎈','🎵',
+    '🍜','☕','🍺','🥾','📷','💤','😮‍💨','🫶'
+  ];
 
   // Lucide icon paths (lucide.dev, ISC licensed), inlined rather than pulling in the
   // whole library for eight glyphs. Mood tags deliberately stay emoji — those are
@@ -830,6 +893,7 @@
     'chevron-down':   '<path d="m6 9 6 6 6-6"/>',
     'chevron-right':  '<path d="m9 18 6-6-6-6"/>',
     'arrow-left':     '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    'chevron-left':   '<path d="m15 18-6-6 6-6"/>',
     'calendar':       '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
     'map-pin':        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     'heart':          '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
@@ -906,12 +970,12 @@
   function splitTags(str){
     return String(str||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
   }
-  function tagBadges(str, cls, mark){
+  function tagBadges(str, cls, mark, label){
     // mark may be a fixed string (e.g. the location pin icon) or a function that
     // resolves a matching emoji per tag value (e.g. mood -> moodEmoji(tag)).
     return splitTags(str).map(function(t){
       var ic = typeof mark === 'function' ? mark(t) : mark;
-      return '<span class="'+cls+'">'+ic+' '+escapeHtml(t)+'</span>';
+      return '<span class="'+cls+'">'+ic+' '+escapeHtml(label ? label(t) : t)+'</span>';
     }).join('');
   }
   function collectTags(typedValue, selectedArr){
@@ -991,7 +1055,7 @@
     if (kind === 'day') return state.filterDay === 'all' ? '일정' : (dayLabelForKey(state.filterDay) || '일정');
     if (kind === 'loc') return state.filterLoc === 'all' ? '장소' : state.filterLoc;
     if (kind === 'member') return state.filterMember === 'all' ? '멤버' : state.filterMember;
-    return state.filterMood === 'all' ? '감흥' : state.filterMood;
+    return state.filterMood === 'all' ? '감흥' : moodLabel(state.filterMood);
   }
 
 
@@ -1137,7 +1201,7 @@
     // The place is named up in the author row now, so it does not repeat below.
     var firstPlace = splitTags(e.location)[0] || '';
     var loc = '';
-    var moodTag = tagBadges(e.mood, 'moodtag', moodEmoji);
+    var moodTag = tagBadges(e.mood, 'moodtag', moodEmoji, moodLabel);
 
     var likesObj = state.likesByEntry[e.id] || {};
     var likeNames = Object.keys(likesObj);
@@ -1242,7 +1306,8 @@
     Array.prototype.forEach.call(root.querySelectorAll('.card-media img'), function(img){
       img.addEventListener('click', function(){
         var card = img.closest('.card');
-        openLightbox(img.getAttribute('src'), card ? card.getAttribute('data-id') : null);
+        openLightbox(img.getAttribute('src'), card ? card.getAttribute('data-id') : null,
+          photosOf(filteredEntries()));
       });
     });
     Array.prototype.forEach.call(root.querySelectorAll('[data-like]'), function(btn){
@@ -1337,7 +1402,7 @@
     return {
       list: list, photos: photos, places: places, moods: moods,
       status: moods.length
-        ? moodEmoji(moods[0].name) + ' ' + moods[0].name + ' 모드'
+        ? moodEmoji(moods[0].name) + ' ' + moodLabel(moods[0].name) + ' 모드'
         : '조용히 채집 중'
     };
   }
@@ -1424,7 +1489,7 @@
 
     var moodHtml = moods.length
       ? '<div class="profile-moods">' + moods.map(function(m){
-          return '<span class="profile-mood">'+moodEmoji(m.name)+escapeHtml(m.name)+
+          return '<span class="profile-mood">'+moodEmoji(m.name)+escapeHtml(moodLabel(m.name))+
             '<span class="mono">'+m.n+'</span></span>';
         }).join('') + '</div>'
       : '<p class="profile-none">아직 감흥을 남기지 않았어요.</p>';
@@ -1453,7 +1518,7 @@
 
     Array.prototype.forEach.call(body.querySelectorAll('.profile-photos img'), function(img){
       img.addEventListener('click', function(){
-        openLightbox(img.getAttribute('src'), img.getAttribute('data-eid'));
+        openLightbox(img.getAttribute('src'), img.getAttribute('data-eid'), photos);
       });
     });
 
@@ -2168,21 +2233,64 @@
     });
   }
 
-  function openLightbox(src, entryId){
-    document.getElementById('lightboxImg').src = src;
-
-    var entry = null;
-    if (entryId){
-      for (var i = 0; i < state.entries.length; i++){
-        if (state.entries[i].id === entryId){ entry = state.entries[i]; break; }
-      }
+  // Every photo the reader could be looking at, in the order they appear. Opened
+  // from a profile it is that person's photos; from the feed, everything the
+  // current filter shows — so paging never leaves the set they were browsing.
+  var lbShots = [], lbAt = 0;
+  function photosOf(entries){
+    var out = [];
+    entries.forEach(function(e){
+      (e.media || []).forEach(function(m){
+        if (m && m.url && m.type !== 'video') out.push({ url:m.url, entryId:e.id });
+      });
+    });
+    return out;
+  }
+  function entryById(id){
+    for (var i = 0; i < state.entries.length; i++){
+      if (state.entries[i].id === id) return state.entries[i];
     }
-    document.getElementById('lightboxMeta').innerHTML = entry
+    return null;
+  }
+
+  function showShot(i){
+    if (!lbShots.length) return;
+    lbAt = (i + lbShots.length) % lbShots.length;
+    var shot = lbShots[lbAt];
+    document.getElementById('lightboxImg').src = shot.url;
+
+    var entry = entryById(shot.entryId);
+    document.getElementById('lightboxWho').innerHTML = entry
       ? '<div class="lb-who"><b>'+escapeHtml(entry.authorName)+'</b>' +
           '<span class="mono">'+escapeHtml(fmtWhen(entry.occurredAt))+'</span></div>' +
         (entry.text ? '<p class="lb-text">'+escapeHtml(entry.text)+'</p>' : '')
       : '';
 
+    // Dots while they can still be counted at a glance; a number after that.
+    var dots = document.getElementById('lightboxDots');
+    var n = lbShots.length;
+    if (n < 2){
+      dots.innerHTML = '';
+    } else if (n <= 12){
+      var html = '';
+      for (var d = 0; d < n; d++) html += '<i'+(d === lbAt ? ' class="on"' : '')+'></i>';
+      dots.innerHTML = html;
+    } else {
+      dots.innerHTML = '<span class="lb-count">'+(lbAt + 1)+' / '+n+'</span>';
+    }
+
+    var more = n > 1;
+    document.getElementById('lightboxPrev').hidden = !more;
+    document.getElementById('lightboxNext').hidden = !more;
+  }
+
+  function openLightbox(src, entryId, shots){
+    lbShots = (shots && shots.length) ? shots : [{ url:src, entryId:entryId }];
+    var start = 0;
+    for (var i = 0; i < lbShots.length; i++){
+      if (lbShots[i].url === src && (!entryId || lbShots[i].entryId === entryId)){ start = i; break; }
+    }
+    showShot(start);
     document.getElementById('lightboxOverlay').style.display = 'flex';
     lockScroll();
   }
@@ -2191,17 +2299,51 @@
     var wasOpen = overlay.style.display !== 'none';
     overlay.style.display = 'none';
     document.getElementById('lightboxImg').src = '';
-    document.getElementById('lightboxMeta').innerHTML = '';
+    document.getElementById('lightboxWho').innerHTML = '';
+    document.getElementById('lightboxDots').innerHTML = '';
+    lbShots = [];
     if (wasOpen) unlockScroll();
   }
+  function lbStep(d){ showShot(lbAt + d); }
+
   document.getElementById('lightboxOverlay').addEventListener('click', closeLightbox);
   document.getElementById('lightboxMeta').addEventListener('click', function(e){ e.stopPropagation(); });
+  document.getElementById('lightboxImg').addEventListener('click', function(e){ e.stopPropagation(); });
   document.getElementById('lightboxClose').addEventListener('click', function(e){
     e.stopPropagation();
     closeLightbox();
   });
+  document.getElementById('lightboxPrev').innerHTML = icon('chevron-left', 22);
+  document.getElementById('lightboxNext').innerHTML = icon('chevron-right', 22);
+  document.getElementById('lightboxPrev').addEventListener('click', function(e){
+    e.stopPropagation(); lbStep(-1);
+  });
+  document.getElementById('lightboxNext').addEventListener('click', function(e){
+    e.stopPropagation(); lbStep(1);
+  });
+
+  // A thumb drags across the photo to move through the set.
+  (function(){
+    var overlay = document.getElementById('lightboxOverlay');
+    var from = null;
+    overlay.addEventListener('touchstart', function(e){
+      from = e.touches.length === 1 ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
+    }, { passive:true });
+    overlay.addEventListener('touchend', function(e){
+      if (!from || !e.changedTouches.length) return;
+      var dx = e.changedTouches[0].clientX - from.x;
+      var dy = e.changedTouches[0].clientY - from.y;
+      from = null;
+      // Sideways and far enough to be a swipe rather than a tap or a scroll.
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) lbStep(dx < 0 ? 1 : -1);
+    }, { passive:true });
+  })();
+
   document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'Escape'){ closeLightbox(); return; }
+    if (!lbShots.length) return;
+    if (e.key === 'ArrowLeft') lbStep(-1);
+    if (e.key === 'ArrowRight') lbStep(1);
   });
 
   var pendingDeleteId = null;
@@ -2356,7 +2498,8 @@
     if (!state.myName){ openGate(); return; }
     document.getElementById('modalWho').textContent = state.myName + ' 님의 기록으로 저장돼요.';
     document.getElementById('fOccurredAt').value = nowLocalInputValue();
-    document.getElementById('fMood').value = '';
+    document.getElementById('moodName').value = '';
+    document.getElementById('moodFaces').style.display = 'none';
     document.getElementById('fText').value = '';
     state.pendingFiles = [];
     state.selectedLocs = [];
@@ -2434,11 +2577,30 @@
     });
   }
 
+  // Moods people wrote themselves, read back out of the records the same way
+  // added places are, so the next person can tap what the last one felt.
+  function addedMoods(){
+    var seen = {}, order = [];
+    (state.entries || []).forEach(function(e){
+      splitTags(e.mood).forEach(function(t){
+        if (!t || MOOD_PRESETS.indexOf(t) !== -1 || seen[t]) return;
+        seen[t] = true; order.push(t);
+      });
+    });
+    state.selectedMoods.forEach(function(t){
+      if (t && MOOD_PRESETS.indexOf(t) === -1 && !seen[t]){ seen[t] = true; order.push(t); }
+    });
+    return order.slice(0, 24);
+  }
+
   function renderMoodChips(){
     var wrap = document.getElementById('moodChips');
-    wrap.innerHTML = MOOD_PRESETS.map(function(p){
-      var on = state.selectedMoods.indexOf(p) !== -1;
-      return '<button type="button" class="chip '+(on?'on':'')+'" data-mood="'+escapeHtml(p)+'">'+moodEmoji(p)+' '+escapeHtml(p)+'</button>';
+    var rows = MOOD_PRESETS.map(function(p){ return { tag:p, added:false }; })
+      .concat(addedMoods().map(function(p){ return { tag:p, added:true }; }));
+    wrap.innerHTML = rows.map(function(r){
+      var on = state.selectedMoods.indexOf(r.tag) !== -1;
+      return '<button type="button" class="chip '+(r.added?'added ':'')+(on?'on':'')+'" ' +
+        'data-mood="'+escapeHtml(r.tag)+'">'+moodEmoji(r.tag)+' '+escapeHtml(moodLabel(r.tag))+'</button>';
     }).join('');
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-mood]'), function(b){
       b.addEventListener('click', function(e){
@@ -2450,6 +2612,61 @@
       });
     });
   }
+
+  // Pick a face, name the feeling, add it.
+  (function(){
+    var faceBtn = document.getElementById('moodFace');
+    var pick = document.getElementById('moodFaces');
+    var nameBox = document.getElementById('moodName');
+    var addBtn = document.getElementById('moodAdd');
+    if (!faceBtn || !pick || !nameBox || !addBtn) return;
+    var chosen = MOOD_FACES[12];
+
+    addBtn.innerHTML = icon('plus', 17);
+
+    pick.innerHTML = MOOD_FACES.map(function(f){
+      return '<button type="button" data-face="'+f+'">'+f+'</button>';
+    }).join('');
+    function markChosen(){
+      faceBtn.textContent = chosen;
+      Array.prototype.forEach.call(pick.querySelectorAll('[data-face]'), function(b){
+        b.classList.toggle('on', b.getAttribute('data-face') === chosen);
+      });
+    }
+    markChosen();
+
+    faceBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      pick.style.display = pick.style.display === 'none' ? 'flex' : 'none';
+    });
+    Array.prototype.forEach.call(pick.querySelectorAll('[data-face]'), function(b){
+      b.addEventListener('click', function(e){
+        e.preventDefault();
+        chosen = b.getAttribute('data-face');
+        markChosen();
+        pick.style.display = 'none';
+        nameBox.focus();
+      });
+    });
+
+    function addMood(){
+      var name = nameBox.value.trim();
+      if (!name) { nameBox.focus(); return; }
+      // The emoji rides at the front of the tag; a name that already starts with
+      // one is taken as it stands rather than being given a second face.
+      var tag = MOOD_LEAD.test(name) ? name : chosen + ' ' + name;
+      if (state.selectedMoods.indexOf(tag) === -1) state.selectedMoods.push(tag);
+      nameBox.value = '';
+      pick.style.display = 'none';
+      renderMoodChips();
+    }
+    addBtn.addEventListener('click', function(e){ e.preventDefault(); addMood(); });
+    nameBox.addEventListener('keydown', function(e){
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      addMood();
+    });
+  })();
 
   function renderThumbs(){
     var wrap = document.getElementById('thumbs');
@@ -2591,7 +2808,7 @@
   document.getElementById('modalSave').addEventListener('click', function(){
     var text = document.getElementById('fText').value.trim();
     var location = collectTags('', state.selectedLocs);
-    var mood = collectTags(document.getElementById('fMood').value, state.selectedMoods);
+    var mood = collectTags('', state.selectedMoods);
     var occurredAt = document.getElementById('fOccurredAt').value;
     var errEl = document.getElementById('formErr');
 
@@ -2653,7 +2870,7 @@
         // instead of silently dropping them like before. Clear the text fields so a retry
         // creates a fresh photo-only entry rather than duplicating the text we already saved.
         document.getElementById('fText').value = '';
-        document.getElementById('fMood').value = '';
+        document.getElementById('moodName').value = '';
         state.selectedLocs = [];
         state.selectedMoods = [];
         renderLocChips();
