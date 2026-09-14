@@ -1581,11 +1581,14 @@
     document.body.className = document.body.className
       .replace(/\btab-[a-z]+\b/g, '').trim() + ' tab-' + state.tab;
 
+    // 여행 is the app itself, so it keeps the brand; the other tabs are pages and
+    // the bar names them.
+    var PAGE_TITLES = { discover:'발견', plan:'계획', my:'마이페이지' };
     var logo = document.querySelector('.logo');
     if (logo){
-      var mine = state.tab === 'my';
-      logo.textContent = mine ? '마이페이지' : 'Local Vibe';
-      logo.classList.toggle('pagetitle', mine);
+      var pageTitle = PAGE_TITLES[state.tab] || '';
+      logo.textContent = pageTitle || 'Local Vibe';
+      logo.classList.toggle('pagetitle', !!pageTitle);
     }
 
     nav.innerHTML = TABS.map(function(t){
