@@ -334,6 +334,12 @@
   }
   .lb-who{display:flex; align-items:center; gap:8px; font-size:14px;}
   .lb-who .mono{color:rgba(255,255,255,.7); font-size:12px;}
+  .lb-who .lb-at{
+    display:inline-flex; align-items:center; gap:3px;
+    color:rgba(255,255,255,.7); font-size:12px; min-width:0;
+  }
+  .lb-moods{display:flex; flex-wrap:wrap; gap:6px 10px; margin:8px 0 0;}
+  .lb-moods span{font-size:12px; color:rgba(255,255,255,.8);}
   .lb-text{
     font-size:14px; line-height:1.6; margin:6px 0 0; color:rgba(255,255,255,.92);
     white-space:pre-wrap; overflow-wrap:break-word;
@@ -399,8 +405,36 @@
   .sample{opacity:.6;}
   .banner{background:var(--paper-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; color:var(--ink-mid); margin:14px 0 0;}
   .banner.warn{border-color:var(--accent); color:var(--accent);}
+  /* One tab's page at a time. The Supabase build reveals its sections with an
+     inline display, which a plain class rule would lose to. */
+  body:not(.tab-trip) #topInner,
+  body:not(.tab-trip) .mapwrap,
+  body:not(.tab-trip) #app,
+  body:not(.tab-trip) #fabAdd{display:none !important;}
+  body.tab-trip #tabPanel{display:none;}
+  body{padding-bottom:calc(62px + env(safe-area-inset-bottom, 0px));}
+  .bottomnav{
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    display:flex; background:var(--surface); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .navbtn{
+    flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center;
+    gap:3px; padding:8px 4px 9px; border:none; background:none; cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif; font-size:11px; color:var(--ink-soft);
+  }
+  .navbtn.on{color:var(--ink);}
+  .navbtn.on .ic{stroke-width:2.4;}
+  .soonwrap{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; text-align:center; padding:88px 24px; color:var(--ink-soft);
+  }
+  .soonwrap h2{font-family:'Noto Sans KR',sans-serif; font-size:19px; margin:0; color:var(--ink);}
+  .soonwrap p{margin:0; font-size:14px; line-height:1.7; color:var(--ink-mid);}
+  .soonwrap .ic{color:var(--ink-soft);}
+  .mytop{padding:24px 0 4px;}
   .fab{
-    position:fixed; right:20px; bottom:22px; z-index:30;
+    position:fixed; right:20px; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); z-index:30;
     background:var(--cta); color:var(--cta-ink);
     border:none; border-radius:999px; padding:14px 20px;
     font-family:'Noto Sans KR',sans-serif; font-size:16px; font-weight:700;
@@ -655,7 +689,11 @@
   </div>
 </div>
 
+<main id="tabPanel" class="wrap"></main>
+
 <button class="fab" id="fabAdd" style="display:none;"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/></svg>채집하기</button>
+
+<nav class="bottomnav" id="bottomNav" aria-label="주요 메뉴"></nav>
 
 <div id="gateOverlay" class="overlay" style="display:none;">
   <div class="sheet">
@@ -894,6 +932,9 @@
     'chevron-right':  '<path d="m9 18 6-6-6-6"/>',
     'arrow-left':     '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     'chevron-left':   '<path d="m15 18-6-6 6-6"/>',
+    'compass':        '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
+    'clipboard':      '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+    'map':            '<path d="M14.1 5.6a2 2 0 0 0 1.8 0l3.6-1.8A1 1 0 0 1 21 4.6v12.8a1 1 0 0 1-.6.9l-4.5 2.3a2 2 0 0 1-1.8 0l-4.2-2.1a2 2 0 0 0-1.8 0l-3.6 1.8A1 1 0 0 1 3 19.4V6.6a1 1 0 0 1 .6-.9l4.5-2.3a2 2 0 0 1 1.8 0z"/><path d="M15 5.8v15"/><path d="M9 3.2v15"/>',
     'calendar':       '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
     'map-pin':        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     'heart':          '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
@@ -917,6 +958,7 @@
     detailId: null,        // record shown in the detail sheet, null when closed
     profileName: null,     // person shown in the profile sheet, null when closed
     membersOpen: false,    // the member list sheet
+    tab: 'trip',           // bottom nav: discover | plan | trip | my
     filterDay: 'all',
     filterLoc: 'all',
     filterMember: 'all',
@@ -1465,6 +1507,108 @@
     if (!open){ overlay.style.display = 'flex'; lockScroll(); }
   }
 
+  // The profile body, built once so the sheet and the 마이 tab show the same thing.
+  function profileBodyHtml(name){
+    var sum = memberSummary(name);
+    var moods = sum.moods, photos = sum.photos, places = sum.places;
+
+    var moodHtml = moods.length
+      ? '<div class="profile-moods">' + moods.map(function(m){
+          return '<span class="profile-mood">'+moodEmoji(m.name)+escapeHtml(moodLabel(m.name))+
+            '<span class="mono">'+m.n+'</span></span>';
+        }).join('') + '</div>'
+      : '<p class="profile-none">아직 감흥을 남기지 않았어요.</p>';
+
+    var photoHtml = photos.length
+      ? '<div class="profile-photos">' + photos.map(function(m){
+          return '<img src="'+escapeHtml(m.url)+'" alt="채집 사진" data-eid="'+escapeHtml(m.entryId)+'" loading="lazy">';
+        }).join('') + '</div>'
+      : '<p class="profile-none">아직 사진이 없어요.</p>';
+
+    return {
+      photos: photos,
+      html:
+        '<div class="profile-head">' +
+          '<div class="profile-avatar" style="--h:'+hashHue(name)+'">'+escapeHtml(avatarInitial(name))+'</div>' +
+          '<div class="profile-who">' +
+            '<div class="profile-name">'+escapeHtml(name)+'</div>' +
+            '<div class="profile-status">'+sum.status+'</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="profile-stats">' +
+          '<span><b class="mono">'+sum.list.length+'</b>개 기록</span>' +
+          '<span><b class="mono">'+photos.length+'</b>장 사진</span>' +
+          '<span><b class="mono">'+places.length+'</b>곳 장소</span>' +
+        '</div>' +
+        '<p class="profile-sec">남긴 감흥</p>' + moodHtml +
+        '<p class="profile-sec">채집한 사진</p>' + photoHtml
+    };
+  }
+  function bindProfilePhotos(root, photos){
+    Array.prototype.forEach.call(root.querySelectorAll('.profile-photos img'), function(img){
+      img.addEventListener('click', function(){
+        openLightbox(img.getAttribute('src'), img.getAttribute('data-eid'), photos);
+      });
+    });
+  }
+
+  // 발견 / 계획 / 여행 / 마이. Only 여행 is built; the other two say so plainly
+  // rather than pretending, and 마이 is the writer's own profile.
+  var TABS = [
+    { key:'discover', label:'발견', icon:'compass' },
+    { key:'plan',     label:'계획', icon:'clipboard' },
+    { key:'trip',     label:'여행', icon:'map' },
+    { key:'my',       label:'마이', icon:'user' }
+  ];
+  function soonHtml(title, line){
+    return '<div class="soonwrap">' + icon('clipboard', 30) +
+      '<h2>'+escapeHtml(title)+'</h2><p>'+line+'</p></div>';
+  }
+  function renderTabs(){
+    var nav = document.getElementById('bottomNav');
+    var panel = document.getElementById('tabPanel');
+    if (!nav || !panel) return;
+
+    document.body.className = document.body.className
+      .replace(/\btab-[a-z]+\b/g, '').trim() + ' tab-' + state.tab;
+
+    nav.innerHTML = TABS.map(function(t){
+      return '<button type="button" class="navbtn'+(state.tab === t.key ? ' on' : '')+'" ' +
+        'data-tab="'+t.key+'" aria-current="'+(state.tab === t.key ? 'page' : 'false')+'">' +
+        icon(t.icon, 22) + '<span>'+t.label+'</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(nav.querySelectorAll('[data-tab]'), function(b){
+      b.addEventListener('click', function(){
+        if (state.tab === b.getAttribute('data-tab')) return;
+        state.tab = b.getAttribute('data-tab');
+        window.scrollTo(0, 0);
+        render();
+      });
+    });
+
+    if (state.tab === 'trip'){ panel.innerHTML = ''; return; }
+
+    if (state.tab === 'discover'){
+      panel.innerHTML = soonHtml('발견', '가까운 사람들이 무엇을 채집했는지<br>둘러보는 곳이에요. 준비 중입니다.');
+      return;
+    }
+    if (state.tab === 'plan'){
+      panel.innerHTML = soonHtml('계획', '다음에 갈 곳을 미리 모아두는 곳이에요.<br>준비 중입니다.');
+      return;
+    }
+
+    // 마이
+    if (!state.myName){
+      panel.innerHTML = '<div class="soonwrap">' + icon('user', 30) +
+        '<h2>아직 이름이 없어요</h2>' +
+        '<p>오른쪽 위에서 이름을 정하면<br>여기에 채집한 것들이 모입니다.</p></div>';
+      return;
+    }
+    var built = profileBodyHtml(state.myName);
+    panel.innerHTML = '<div class="mytop">' + built.html + '</div>';
+    bindProfilePhotos(panel, built.photos);
+  }
+
   function renderProfile(){
     var overlay = document.getElementById('profileOverlay');
     var body = document.getElementById('profileBody');
@@ -1480,47 +1624,9 @@
       return;
     }
 
-    var sum = memberSummary(name);
-    var moods = sum.moods, photos = sum.photos, places = sum.places, status = sum.status;
-
-    // The same face as the bar's top right: the initial on their own colour,
-    // never one of their photos.
-    var face = escapeHtml(avatarInitial(name));
-
-    var moodHtml = moods.length
-      ? '<div class="profile-moods">' + moods.map(function(m){
-          return '<span class="profile-mood">'+moodEmoji(m.name)+escapeHtml(moodLabel(m.name))+
-            '<span class="mono">'+m.n+'</span></span>';
-        }).join('') + '</div>'
-      : '<p class="profile-none">아직 감흥을 남기지 않았어요.</p>';
-
-    var photoHtml = photos.length
-      ? '<div class="profile-photos">' + photos.map(function(m){
-          return '<img src="'+escapeHtml(m.url)+'" alt="채집 사진" data-eid="'+escapeHtml(m.entryId)+'" loading="lazy">';
-        }).join('') + '</div>'
-      : '<p class="profile-none">아직 사진이 없어요.</p>';
-
-    body.innerHTML =
-      '<div class="profile-head">' +
-        '<div class="profile-avatar" style="--h:'+hashHue(name)+'">'+face+'</div>' +
-        '<div class="profile-who">' +
-          '<div class="profile-name">'+escapeHtml(name)+'</div>' +
-          '<div class="profile-status">'+status+'</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="profile-stats">' +
-        '<span><b class="mono">'+list.length+'</b>개 기록</span>' +
-        '<span><b class="mono">'+photos.length+'</b>장 사진</span>' +
-        '<span><b class="mono">'+places.length+'</b>곳 장소</span>' +
-      '</div>' +
-      '<p class="profile-sec">남긴 감흥</p>' + moodHtml +
-      '<p class="profile-sec">채집한 사진</p>' + photoHtml;
-
-    Array.prototype.forEach.call(body.querySelectorAll('.profile-photos img'), function(img){
-      img.addEventListener('click', function(){
-        openLightbox(img.getAttribute('src'), img.getAttribute('data-eid'), photos);
-      });
-    });
+    var built = profileBodyHtml(name);
+    body.innerHTML = built.html;
+    bindProfilePhotos(body, built.photos);
 
     if (!open){ overlay.style.display = 'flex'; lockScroll(); }
   }
@@ -2127,6 +2233,7 @@
     });
   })();
   function render(){
+    renderTabs();
     renderMe();
     renderFilterButtons();
     renderBanner();
@@ -2260,10 +2367,18 @@
     document.getElementById('lightboxImg').src = shot.url;
 
     var entry = entryById(shot.entryId);
+    var place = entry ? (splitTags(entry.location)[0] || '') : '';
+    var moods = entry ? splitTags(entry.mood) : [];
     document.getElementById('lightboxWho').innerHTML = entry
       ? '<div class="lb-who"><b>'+escapeHtml(entry.authorName)+'</b>' +
+          (place ? '<span class="lb-at">'+icon('map-pin', 12)+escapeHtml(place)+'</span>' : '') +
           '<span class="mono">'+escapeHtml(fmtWhen(entry.occurredAt))+'</span></div>' +
-        (entry.text ? '<p class="lb-text">'+escapeHtml(entry.text)+'</p>' : '')
+        (entry.text ? '<p class="lb-text">'+escapeHtml(entry.text)+'</p>' : '') +
+        (moods.length
+          ? '<div class="lb-moods">' + moods.map(function(m){
+              return '<span>'+moodEmoji(m)+' '+escapeHtml(moodLabel(m))+'</span>';
+            }).join('') + '</div>'
+          : '')
       : '';
 
     // Dots while they can still be counted at a glance; a number after that.
