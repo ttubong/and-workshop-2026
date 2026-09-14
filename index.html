@@ -77,7 +77,7 @@
   }
   /* The header sits inside .wrap, which already supplies the 20px inset, so this
      adds none of its own — otherwise the title is indented past the cards below. */
-  .top-inner{max-width:640px; margin:0 auto; padding:24px 20px 10px;}
+  .top-inner{max-width:640px; margin:0 auto; padding:12px 20px 10px;}
   /* Top navigation: brand on the left, the two controls on the right. */
   .topnav{
     max-width:640px; margin:0 auto; padding:0 20px;
@@ -650,13 +650,6 @@
 </header>
 
 <div class="top-inner" id="topInner" style="display:none;">
-      <h1 class="title">구례·하동 채집함</h1>
-      <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
-      <div class="stats">
-        <button type="button" class="facepile" id="facepile" aria-label="참여 멤버 보기"></button>
-        <span><b id="statMembers">0</b>명 참여</span>
-        <span><b id="statCount">0</b>개 기록</span>
-      </div>
   <div class="filterbar" id="filterBar"></div>
 </div>
 
@@ -1121,8 +1114,12 @@
 
   function renderFilterButtons(){
     var wrap = document.getElementById('filterBar');
-    document.getElementById('statCount').textContent = state.entries.length;
-    document.getElementById('statMembers').textContent = distinctMembers().length;
+    // The header block that held these is gone; the code stays ready for wherever
+    // the counts land next.
+    var statCount = document.getElementById('statCount');
+    var statMembers = document.getElementById('statMembers');
+    if (statCount) statCount.textContent = state.entries.length;
+    if (statMembers) statMembers.textContent = distinctMembers().length;
     var dims = [
       { key:'day', active: state.filterDay !== 'all' },
       { key:'loc', active: state.filterLoc !== 'all' },
@@ -1560,9 +1557,8 @@
     { key:'trip',     label:'여행', icon:'map' },
     { key:'my',       label:'마이', icon:'user' }
   ];
-  function soonHtml(title, line){
-    return '<div class="soonwrap">' + icon('clipboard', 30) +
-      '<h2>'+escapeHtml(title)+'</h2><p>'+line+'</p></div>';
+  function soonHtml(){
+    return '<div class="soonwrap"><p>준비 중입니다</p></div>';
   }
   function renderTabs(){
     var nav = document.getElementById('bottomNav');
@@ -1589,17 +1585,17 @@
     if (state.tab === 'trip'){ panel.innerHTML = ''; return; }
 
     if (state.tab === 'discover'){
-      panel.innerHTML = soonHtml('발견', '가까운 사람들이 무엇을 채집했는지<br>둘러보는 곳이에요. 준비 중입니다.');
+      panel.innerHTML = soonHtml();
       return;
     }
     if (state.tab === 'plan'){
-      panel.innerHTML = soonHtml('계획', '다음에 갈 곳을 미리 모아두는 곳이에요.<br>준비 중입니다.');
+      panel.innerHTML = soonHtml();
       return;
     }
 
     // 마이
     if (!state.myName){
-      panel.innerHTML = '<div class="soonwrap">' + icon('user', 30) +
+      panel.innerHTML = '<div class="soonwrap">' +
         '<h2>아직 이름이 없어요</h2>' +
         '<p>오른쪽 위에서 이름을 정하면<br>여기에 채집한 것들이 모입니다.</p></div>';
       return;
@@ -2527,7 +2523,8 @@
     if (e.target === e.currentTarget) closeFilterSheet();
   });
 
-  document.getElementById('facepile').addEventListener('click', function(){
+  var facepileBtn = document.getElementById('facepile');
+  if (facepileBtn) facepileBtn.addEventListener('click', function(){
     if (!distinctMembers().length) return;
     state.membersOpen = true;
     render();
