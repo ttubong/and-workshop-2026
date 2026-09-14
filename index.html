@@ -89,6 +89,12 @@
     font-size:16px; font-weight:700; letter-spacing:.12em;
     text-transform:uppercase; color:var(--ink); white-space:nowrap;
   }
+  /* On a tab that is a page of its own, the bar names the page instead of the
+     app, so it reads as a title rather than the brand. */
+  .logo.pagetitle{
+    font-family:'Noto Sans KR',sans-serif;
+    letter-spacing:0; text-transform:none;
+  }
   h1.title{
     font-family:'Noto Sans KR',sans-serif; font-weight:700;
     font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
@@ -1574,6 +1580,13 @@
 
     document.body.className = document.body.className
       .replace(/\btab-[a-z]+\b/g, '').trim() + ' tab-' + state.tab;
+
+    var logo = document.querySelector('.logo');
+    if (logo){
+      var mine = state.tab === 'my';
+      logo.textContent = mine ? '마이페이지' : 'Local Vibe';
+      logo.classList.toggle('pagetitle', mine);
+    }
 
     nav.innerHTML = TABS.map(function(t){
       return '<button type="button" class="navbtn'+(state.tab === t.key ? ' on' : '')+'" ' +
