@@ -72,7 +72,7 @@
   }
   /* The header sits inside .wrap, which already supplies the 20px inset, so this
      adds none of its own — otherwise the title is indented past the cards below. */
-  .top-inner{max-width:640px; margin:0 auto; padding:12px 20px 10px;}
+  .top-inner{max-width:640px; margin:0 auto; padding:24px 20px 10px;}
   /* Top navigation: brand on the left, the two controls on the right. */
   .topnav{
     max-width:640px; margin:0 auto; padding:0 20px;
@@ -399,7 +399,7 @@
   .banner.warn{border-color:var(--accent); color:var(--accent);}
   /* One tab's page at a time. The Supabase build reveals its sections with an
      inline display, which a plain class rule would lose to. */
-  body:not(.tab-trip) #topInner,
+  body:not(.tab-trip) .top-inner,
   body:not(.tab-trip) .mapwrap,
   body:not(.tab-trip) #app,
   body:not(.tab-trip) #fabAdd{display:none !important;}
@@ -627,6 +627,13 @@
 </header>
 
 <div class="top-inner">
+      <h1 class="title">구례·하동 채집함</h1>
+      <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
+      <div class="stats">
+        <button type="button" class="facepile" id="facepile" aria-label="참여 멤버 보기"></button>
+        <span><b id="statMembers">0</b>명 참여</span>
+        <span><b id="statCount">0</b>개 기록</span>
+      </div>
   <div class="filterbar" id="filterBar"></div>
 </div>
 
