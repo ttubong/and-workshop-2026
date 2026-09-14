@@ -87,7 +87,36 @@
     font-size:24px; line-height:1.25; margin:0 0 2px; text-wrap:balance;
   }
   .subtitle{font-size:14px; color:var(--ink-mid); margin:0 0 12px;}
-  .stats{display:flex; gap:8px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
+  .stats{display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:12px; color:var(--ink-soft);}
+  /* The people in the room, then the numbers about them. */
+  .facepile{
+    display:inline-flex; align-items:center; background:none; border:none;
+    padding:0; margin:0 2px 0 0; cursor:pointer;
+  }
+  .facepile .avatar{
+    width:24px; height:24px; font-size:11px;
+    box-shadow:0 0 0 2px var(--paper);
+  }
+  .facepile .avatar + .avatar{margin-left:-7px;}
+  .facepile .more{
+    background:var(--paper-2); color:var(--ink-mid);
+    font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  }
+  .facepile:empty{display:none;}
+  /* A sheet that is really a page: the member list and one member's profile. */
+  .sheet.tall{height:90dvh;}
+  .member{
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    background:none; border:none; padding:12px 0; cursor:pointer; font:inherit; color:inherit;
+  }
+  .member + .member{border-top:1px solid var(--line);}
+  .member .avatar{width:44px; height:44px; font-size:18px;}
+  /* Spans by default sit on one line; the row wants three stacked. */
+  .member-who{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .member-name{display:block; font-weight:700; font-size:16px; color:var(--ink);}
+  .member-line{display:block; font-size:14px; color:var(--ink-mid); margin-top:3px;}
+  .member-count{display:block; font-size:12px; color:var(--ink-soft); margin-top:3px;}
+  .member-go{flex:0 0 auto; color:var(--ink-soft);}
   .stats span + span::before{content:'·'; opacity:.6; margin-right:8px;}
   .stats b{color:var(--ink); font-family:'Noto Sans KR',sans-serif; font-weight:500;}
   .top-actions{flex:0 0 auto; display:flex; align-items:center; gap:8px;}
@@ -507,8 +536,9 @@
       <h1 class="title">구례·하동 채집함</h1>
       <p class="subtitle">9.15 – 9.17 워크샵, 눈과 손으로 채집한 것들</p>
       <div class="stats">
-        <span><b id="statCount">0</b>개 기록</span>
+        <button type="button" class="facepile" id="facepile" aria-label="참여 멤버 보기"></button>
         <span><b id="statMembers">0</b>명 참여</span>
+        <span><b id="statCount">0</b>개 기록</span>
       </div>
   <div class="filterbar" id="filterBar"></div>
 </div>
@@ -661,8 +691,21 @@
   </div>
 </div>
 
+<div id="membersOverlay" class="overlay" style="display:none;">
+  <div class="sheet tall">
+    <div class="sheet-head">
+      <h2>참여 멤버</h2>
+      <p class="hint" id="membersHint"></p>
+    </div>
+    <div class="sheet-body" id="membersBody"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="membersClose" style="flex:1;">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="profileOverlay" class="overlay" style="display:none;">
-  <div class="sheet">
+  <div class="sheet tall">
     <div class="sheet-head">
       <h2>프로필</h2>
     </div>
@@ -713,6 +756,7 @@
     'plus':           '<path d="M5 12h14"/><path d="M12 5v14"/>',
     'x':              '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     'chevron-down':   '<path d="m6 9 6 6 6-6"/>',
+    'chevron-right':  '<path d="m9 18 6-6-6-6"/>',
     'calendar':       '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
     'map-pin':        '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     'heart':          '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
@@ -738,6 +782,7 @@
     removedIds: {},        // entryId -> true, from a confirmed delete until the snapshot catches up
     detailId: null,        // record shown in the detail sheet, null when closed
     profileName: null,     // person shown in the profile sheet, null when closed
+    membersOpen: false,    // the member list sheet
     filterDay: 'all',
     filterLoc: 'all',
     filterMember: 'all',
@@ -1204,6 +1249,88 @@
       .sort(function(a,b){ return b.n - a.n || a.name.localeCompare(b.name, 'ko'); });
   }
 
+  // Everything the app says about one person, worked out once so the member
+  // list and the profile sheet can never disagree.
+  function memberSummary(name){
+    var list = state.entries.filter(function(e){ return e.authorName === name; });
+    var photos = [], placeSeen = {}, places = [];
+    list.forEach(function(e){
+      (e.media || []).forEach(function(m){
+        if (m && m.url && m.type !== 'video') photos.push({ url:m.url, entryId:e.id });
+      });
+      splitTags(e.location).forEach(function(p){
+        if (!placeSeen[p]){ placeSeen[p] = true; places.push(p); }
+      });
+    });
+    var moods = moodSummary(list);
+    // Read from what they actually tagged: it says how their records lean
+    // rather than claiming to know how they feel.
+    return {
+      list: list, photos: photos, places: places, moods: moods,
+      status: moods.length
+        ? moodEmoji(moods[0].name) + ' ' + moods[0].name + ' 모드'
+        : '조용히 채집 중'
+    };
+  }
+
+  function faceHtml(name, cls){
+    return '<span class="avatar'+(cls ? ' '+cls : '')+'" style="--h:'+hashHue(name)+'">' +
+      escapeHtml(avatarInitial(name)) + '</span>';
+  }
+
+  function renderFacepile(){
+    var pile = document.getElementById('facepile');
+    if (!pile) return;
+    var names = distinctMembers();
+    if (!names.length){ pile.innerHTML = ''; return; }
+    var shown = names.slice(0, 5);
+    pile.innerHTML = shown.map(function(n){ return faceHtml(n); }).join('') +
+      (names.length > shown.length
+        ? '<span class="avatar more">+'+(names.length - shown.length)+'</span>'
+        : '');
+  }
+
+  function renderMembers(){
+    var overlay = document.getElementById('membersOverlay');
+    var body = document.getElementById('membersBody');
+    var open = overlay.style.display === 'flex';
+    var names = distinctMembers();
+
+    if (!state.membersOpen || !names.length){
+      state.membersOpen = false;
+      body.innerHTML = '';
+      if (open){ overlay.style.display = 'none'; unlockScroll(); }
+      return;
+    }
+
+    document.getElementById('membersHint').textContent =
+      names.length + '명이 ' + state.entries.length + '개를 채집했어요.';
+
+    body.innerHTML = names.map(function(n){
+      var s = memberSummary(n);
+      return '<button type="button" class="member" data-member="'+escapeHtml(n)+'">' +
+        faceHtml(n) +
+        '<span class="member-who">' +
+          '<span class="member-name">'+escapeHtml(n)+'</span>' +
+          '<span class="member-line">'+s.status+'</span>' +
+          '<span class="member-count">' +
+            s.list.length+'개 채집 · '+s.photos.length+'장 사진 · '+s.places.length+'곳 장소' +
+          '</span>' +
+        '</span>' +
+        '<span class="member-go">'+icon('chevron-right', 18)+'</span>' +
+      '</button>';
+    }).join('');
+
+    Array.prototype.forEach.call(body.querySelectorAll('[data-member]'), function(btn){
+      btn.addEventListener('click', function(){
+        state.profileName = btn.getAttribute('data-member');
+        render();
+      });
+    });
+
+    if (!open){ overlay.style.display = 'flex'; lockScroll(); }
+  }
+
   function renderProfile(){
     var overlay = document.getElementById('profileOverlay');
     var body = document.getElementById('profileBody');
@@ -1219,23 +1346,8 @@
       return;
     }
 
-    var moods = moodSummary(list);
-    var photos = [];
-    list.forEach(function(e){
-      (e.media || []).forEach(function(m){
-        if (m && m.url && m.type !== 'video') photos.push({ url:m.url, entryId:e.id });
-      });
-    });
-    var placeSeen = {}, places = [];
-    list.forEach(function(e){
-      splitTags(e.location).forEach(function(p){ if (!placeSeen[p]){ placeSeen[p] = true; places.push(p); } });
-    });
-
-    // The line reads from what they actually tagged, so it says how their records
-    // lean rather than claiming to know how they feel.
-    var status = moods.length
-      ? moodEmoji(moods[0].name) + ' ' + moods[0].name + ' 모드'
-      : '조용히 채집 중';
+    var sum = memberSummary(name);
+    var moods = sum.moods, photos = sum.photos, places = sum.places, status = sum.status;
 
     // The same face as the bar's top right: the initial on their own colour,
     // never one of their photos.
@@ -1277,6 +1389,12 @@
     });
 
     if (!open){ overlay.style.display = 'flex'; lockScroll(); }
+  }
+
+  function closeMembers(){
+    if (!state.membersOpen) return;
+    state.membersOpen = false;
+    render();
   }
 
   function closeProfile(){
@@ -1879,6 +1997,8 @@
     renderFilterButtons();
     renderBanner();
     renderDetail();
+    renderFacepile();
+    renderMembers();
     renderProfile();
 
     renderMap();
@@ -2092,6 +2212,16 @@
 
   document.getElementById('filterSheetOverlay').addEventListener('click', function(e){
     if (e.target === e.currentTarget) closeFilterSheet();
+  });
+
+  document.getElementById('facepile').addEventListener('click', function(){
+    if (!distinctMembers().length) return;
+    state.membersOpen = true;
+    render();
+  });
+  document.getElementById('membersClose').addEventListener('click', closeMembers);
+  document.getElementById('membersOverlay').addEventListener('click', function(e){
+    if (e.target === e.currentTarget) closeMembers();
   });
 
   document.getElementById('profileClose').addEventListener('click', closeProfile);
